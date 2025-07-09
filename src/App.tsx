@@ -7,6 +7,8 @@ import { DeploymentSuccess } from './components/DeploymentSuccess';
 import { PresaleWizard } from './components/PresaleWizard';
 import { MySales } from './components/MySales';
 import { DeployedTokens } from './components/DeployedTokens';
+import { SaleRouter } from './components/SaleRouter';
+import { SaleExplorer } from './components/SaleExplorer';
 import { TokenConfig, DeploymentResult, Step } from './types';
 
 declare global {
@@ -16,7 +18,7 @@ declare global {
 }
 
 function App() {
-  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens'>('landing');
+  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
 
@@ -35,6 +37,11 @@ function App() {
   const handleViewTokens = () => {
     setCurrentStep('tokens');
   };
+
+  const handleExploreSales = () => {
+    setCurrentStep('explore');
+  };
+
   const handleTokenConfigComplete = (config: TokenConfig) => {
     setTokenConfig(config);
     setCurrentStep('vesting');
@@ -131,8 +138,22 @@ function App() {
     case 'tokens':
       return <DeployedTokens />;
     
+    case 'sale':
+      return <SaleRouter />;
+    
+    case 'explore':
+      return <SaleExplorer />;
+    
     default:
-      return <LandingPage onGetStarted={handleGetStarted} />;
+      return (
+        <LandingPage 
+          onGetStarted={handleGetStarted}
+          onLaunchSale={handleLaunchSale}
+          onViewSales={handleViewSales}
+          onViewTokens={handleViewTokens}
+          onExploreSales={handleExploreSales}
+        />
+      );
   }
 }
 

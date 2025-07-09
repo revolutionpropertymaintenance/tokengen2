@@ -7,13 +7,15 @@ interface LandingPageProps {
   onLaunchSale: () => void;
   onViewSales: () => void;
   onViewTokens: () => void;
+  onExploreSales?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ 
   onGetStarted, 
   onLaunchSale, 
   onViewSales, 
-  onViewTokens 
+  onViewTokens,
+  onExploreSales
 }) => {
   const features = [
     {
@@ -76,6 +78,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               >
                 My Sales
               </button>
+              {onExploreSales && (
+                <button
+                  onClick={onExploreSales}
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Explore Sales
+                </button>
+              )}
             </nav>
             <WalletConnection />
           </div>
@@ -127,6 +137,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 >
                   View My Tokens →
                 </button>
+                {onExploreSales && (
+                  <button
+                    onClick={onExploreSales}
+                    className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                  >
+                    Explore Sales →
+                  </button>
+                )}
               </div>
               
               <button
