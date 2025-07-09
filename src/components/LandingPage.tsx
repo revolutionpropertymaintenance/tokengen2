@@ -4,9 +4,17 @@ import { WalletConnection } from './WalletConnection';
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onLaunchSale: () => void;
+  onViewSales: () => void;
+  onViewTokens: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ 
+  onGetStarted, 
+  onLaunchSale, 
+  onViewSales, 
+  onViewTokens 
+}) => {
   const features = [
     {
       icon: Zap,
@@ -54,7 +62,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             </div>
             <h1 className="text-2xl font-bold text-white">TokenForge</h1>
           </div>
-          <WalletConnection />
+          <div className="flex items-center space-x-4">
+            <nav className="hidden md:flex items-center space-x-6">
+              <button
+                onClick={onViewTokens}
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                My Tokens
+              </button>
+              <button
+                onClick={onViewSales}
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                My Sales
+              </button>
+            </nav>
+            <WalletConnection />
+          </div>
         </div>
       </header>
 
@@ -87,6 +111,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center space-x-2 group"
               >
                 <span>Start Building</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              
+              <div className="flex items-center justify-center space-x-4 mt-6">
+                <button
+                  onClick={onLaunchSale}
+                  className="text-green-400 hover:text-green-300 font-medium transition-colors"
+                >
+                  Launch Presale →
+                </button>
+                <button
+                  onClick={onViewTokens}
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                >
+                  View My Tokens →
+                </button>
+              </div>
+              
+              <button
+                onClick={onLaunchSale}
+                className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center space-x-2 group"
+              >
+                <span>Launch Sale</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               

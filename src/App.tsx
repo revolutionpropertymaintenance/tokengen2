@@ -4,6 +4,9 @@ import { TokenBuilder } from './components/TokenBuilder';
 import { VestingConfiguration } from './components/VestingConfiguration';
 import { ReviewDeploy } from './components/ReviewDeploy';
 import { DeploymentSuccess } from './components/DeploymentSuccess';
+import { PresaleWizard } from './components/PresaleWizard';
+import { MySales } from './components/MySales';
+import { DeployedTokens } from './components/DeployedTokens';
 import { TokenConfig, DeploymentResult, Step } from './types';
 
 declare global {
@@ -13,7 +16,7 @@ declare global {
 }
 
 function App() {
-  const [currentStep, setCurrentStep] = useState<Step>('landing');
+  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
 
@@ -21,6 +24,17 @@ function App() {
     setCurrentStep('builder');
   };
 
+  const handleLaunchSale = () => {
+    setCurrentStep('presale');
+  };
+
+  const handleViewSales = () => {
+    setCurrentStep('sales');
+  };
+
+  const handleViewTokens = () => {
+    setCurrentStep('tokens');
+  };
   const handleTokenConfigComplete = (config: TokenConfig) => {
     setTokenConfig(config);
     setCurrentStep('vesting');
@@ -60,7 +74,14 @@ function App() {
 
   switch (currentStep) {
     case 'landing':
-      return <LandingPage onGetStarted={handleGetStarted} />;
+      return (
+        <LandingPage 
+          onGetStarted={handleGetStarted}
+          onLaunchSale={handleLaunchSale}
+          onViewSales={handleViewSales}
+          onViewTokens={handleViewTokens}
+        />
+      );
     
     case 'builder':
       return (
@@ -96,6 +117,19 @@ function App() {
           onStartNew={handleStartNew}
         />
       );
+    
+    case 'presale':
+      return (
+        <PresaleWizard
+          onBack={() => setCurrentStep('landing')}
+        />
+      );
+    
+    case 'sales':
+      return <MySales />;
+    
+    case 'tokens':
+      return <DeployedTokens />;
     
     default:
       return <LandingPage onGetStarted={handleGetStarted} />;
