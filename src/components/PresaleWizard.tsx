@@ -132,40 +132,53 @@ export const PresaleWizard: React.FC<PresaleWizardProps> = ({ onBack }) => {
 
         {/* Progress Steps */}
         <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between overflow-x-auto pb-2">
             {steps.map((step, index) => {
               const Icon = step.icon;
               const isActive = step.id === currentStep;
               const isCompleted = getCurrentStepIndex() > index;
               
               return (
-                <div key={step.id} className="flex items-center">
+                <div key={step.id} className="flex items-center flex-shrink-0">
                   <div className={`flex items-center space-x-3 ${
                     isActive ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-gray-400'
                   }`}>
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2 ${
                       isActive 
                         ? 'border-blue-400 bg-blue-400/20' 
                         : isCompleted 
                         ? 'border-green-400 bg-green-400/20' 
                         : 'border-gray-400 bg-gray-400/20'
                     }`}>
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-4 h-4 md:w-5 md:h-5" />
                     </div>
-                    <div>
-                      <div className="font-medium">{step.title}</div>
+                    <div className="hidden sm:block">
+                      <div className="font-medium text-sm md:text-base">{step.title}</div>
                       <div className="text-xs opacity-75">Step {index + 1}</div>
+                    </div>
+                    <div className="sm:hidden">
+                      <div className="text-xs font-medium">{index + 1}</div>
                     </div>
                   </div>
                   
                   {index < steps.length - 1 && (
-                    <div className={`w-16 h-0.5 mx-4 ${
+                    <div className={`w-8 md:w-16 h-0.5 mx-2 md:mx-4 flex-shrink-0 ${
                       isCompleted ? 'bg-green-400' : 'bg-gray-600'
                     }`} />
                   )}
                 </div>
               );
             })}
+          </div>
+          
+          {/* Mobile Step Indicator */}
+          <div className="sm:hidden mt-4 text-center">
+            <div className="text-white font-medium">
+              {steps.find(step => step.id === currentStep)?.title}
+            </div>
+            <div className="text-gray-300 text-sm">
+              Step {getCurrentStepIndex() + 1} of {steps.length}
+            </div>
           </div>
         </div>
 
