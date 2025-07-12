@@ -2,7 +2,6 @@ import React from 'react';
 import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star } from 'lucide-react';
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
-import { ChainStatus } from './ChainStatus';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -94,7 +93,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               )}
             </nav>
             <WalletConnection />
-            <ChainStatus />
           </div>
         </div>
       </header>

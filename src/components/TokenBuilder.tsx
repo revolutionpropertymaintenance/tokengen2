@@ -7,7 +7,6 @@ import { networks, mainnets, testnets } from '../data/networks';
 import { NetworkMismatchModal } from './NetworkMismatchModal';
 import { contractService } from '../services/contractService';
 import { useNetworkMode } from '../hooks/useNetworkMode';
-import { NetworkModeToggle } from './NetworkModeToggle';
 import { useWallet } from '../hooks/useWallet';
 
 interface TokenBuilderProps {
@@ -18,7 +17,8 @@ interface TokenBuilderProps {
 
 export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, initialConfig }) => {
   const { isTestnetMode } = useNetworkMode();
-  const { chainId, isNetworkMismatch, switchToNetwork, isAttemptingSwitch, switchError } = useWallet();
+  const { chainId, isNetworkMismatch, switchToNetwork, isAttemptingSwitch, switchError } = useWallet(); 
+  const { toggleMode } = useNetworkMode();
   const [config, setConfig] = useState<TokenConfig>({
     name: '',
     symbol: '',
@@ -492,7 +492,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
           </div>
 
           {/* Network Mode Selector */}
-          <div className="md:col-span-2 lg:col-span-3 p-4 bg-white/5 rounded-lg border border-white/10">
+          <div className="p-4 bg-white/5 rounded-lg border border-white/10">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-white font-medium mb-1">Network Mode</h4>
@@ -504,7 +504,17 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
               </div>
               <div className="flex items-center space-x-3">
                 <span className="text-sm text-gray-300">{isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
-                <NetworkModeToggle />
+                <button
+                  onClick={toggleMode}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    isTestnetMode ? 'bg-green-500' : 'bg-blue-600'
+                  }`}
+                  title={isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}
+                >
+                  <span className="sr-only">{isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}</span>
+                  <span className={`${isTestnetMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                  />
+                </button>
               </div>
             </div>
           </div>

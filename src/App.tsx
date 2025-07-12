@@ -11,7 +11,6 @@ import { SaleRouter } from './components/SaleRouter';
 import { SaleExplorer } from './components/SaleExplorer';
 import { TokenManagement } from './components/TokenManagement';
 import { NotFound } from './components/NotFound';
-import { ModeBanner } from './components/ModeBanner';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useNetworkMode } from './hooks/useNetworkMode';
@@ -88,7 +87,6 @@ function App() {
   switch (currentStep) {
     case 'landing':
       return (
-        <ErrorBoundary>
         <LandingPage 
           onGetStarted={handleGetStarted}
           onLaunchSale={handleLaunchSale}
@@ -102,7 +100,6 @@ function App() {
     case 'builder':
       return (
         <ErrorBoundary>
-        {isTestnetMode && <ModeBanner />}
         <TokenBuilder
           onBack={goBack}
           onNext={handleTokenConfigComplete}
@@ -114,7 +111,6 @@ function App() {
     case 'vesting':
       return (
         <ErrorBoundary>
-        {isTestnetMode && <ModeBanner />}
         <VestingConfiguration
           config={tokenConfig!}
           onBack={goBack}
@@ -126,7 +122,6 @@ function App() {
     case 'review':
       return (
         <ErrorBoundary>
-        {isTestnetMode && <ModeBanner />}
         <ReviewDeploy
           config={tokenConfig!}
           onBack={goBack}
@@ -138,7 +133,6 @@ function App() {
     case 'success':
       return (
         <ErrorBoundary>
-        {isTestnetMode && <ModeBanner />}
         <DeploymentSuccess
           result={deploymentResult!}
           onStartNew={handleStartNew}
@@ -149,7 +143,6 @@ function App() {
     case 'presale':
       return (
         <ErrorBoundary>
-        {isTestnetMode && <ModeBanner />}
         <PresaleWizard
           onBack={() => setCurrentStep('landing')}
         />
@@ -157,19 +150,19 @@ function App() {
       );
     
     case 'sales':
-      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<MySales /></ErrorBoundary>;
+      return <ErrorBoundary><MySales /></ErrorBoundary>;
     
     case 'tokens':
-      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<DeployedTokens /></ErrorBoundary>;
+      return <ErrorBoundary><DeployedTokens /></ErrorBoundary>;
     
     case 'sale':
-      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<SaleRouter /></ErrorBoundary>;
+      return <ErrorBoundary><SaleRouter /></ErrorBoundary>;
     
     case 'explore':
-      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<SaleExplorer /></ErrorBoundary>;
+      return <ErrorBoundary><SaleExplorer /></ErrorBoundary>;
     
     case 'manage':
-      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<TokenManagement /></ErrorBoundary>;
+      return <ErrorBoundary><TokenManagement /></ErrorBoundary>;
     
     case '404':
       return <ErrorBoundary><NotFound /></ErrorBoundary>;
