@@ -47,43 +47,45 @@ export const WalletConnection: React.FC = () => {
 
   if (isConnected) {
     return (
-      <div className="flex items-center space-x-4">
-        <ChainStatus />
-        <NetworkModeToggle />
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
-          <div className="flex items-center space-x-2">
-            <Wallet className="w-4 h-4 text-blue-300" />
-            <span className="text-sm font-medium text-white">
-              {formatAddress(address!)}
-            </span>
-            <div className="flex flex-col ml-2">
-              <span className="text-xs text-blue-300">
-                {balance} {chainId === 25062019 ? 'ESR' : chainId === 56 ? 'BNB' : 'ETH'}
+      <div className="flex items-center space-x-4 flex-wrap">
+        <div className="flex items-center space-x-4">
+          <ChainStatus />
+          <NetworkModeToggle />
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
+            <div className="flex items-center space-x-2">
+              <Wallet className="w-4 h-4 text-blue-300" />
+              <span className="text-sm font-medium text-white">
+                {formatAddress(address!)}
               </span>
-              {chainId && (
-                <span className="text-xs text-gray-400">
-                  {getNetworkName(chainId)}
+              <div className="flex flex-col ml-2">
+                <span className="text-xs text-blue-300">
+                  {balance} {chainId === 25062019 ? 'ESR' : chainId === 56 ? 'BNB' : 'ETH'}
                 </span>
-              )}
+                {chainId && (
+                  <span className="text-xs text-gray-400">
+                    {getNetworkName(chainId)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+          <button
+            onClick={disconnectWallet}
+            className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
-        <button
-          onClick={disconnectWallet}
-          className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+        {isNetworkMismatch && (
+          <button
+            onClick={switchToCompatibleNetwork}
+            className="bg-amber-500/20 text-amber-400 px-3 py-1 rounded-lg text-xs font-medium flex items-center space-x-1"
+          >
+            <span>Switch to {isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
+            <ArrowRight className="w-3 h-3" />
+          </button>
+        )}
       </div>
-      {isNetworkMismatch && (
-        <button
-          onClick={switchToCompatibleNetwork}
-          className="ml-2 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-lg text-xs font-medium flex items-center space-x-1"
-        >
-          <span>Switch to {isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
-          <ArrowRight className="w-3 h-3" />
-        </button>
-      )}
     );
   }
 
