@@ -2,6 +2,88 @@
 
 TokenForge is a comprehensive platform for creating and deploying professional-grade ERC-20/BEP-20 tokens across multiple blockchains. With an intuitive interface and advanced features, TokenForge makes token creation accessible to everyone, regardless of technical expertise.
 
+## Page Themes and Design
+
+### Landing Page
+The landing page features a dark gradient background (slate-900 to purple-900) with a modern, sleek design. It includes:
+- Hero section with a large, bold headline and gradient text accents
+- Feature cards with icon illustrations in a 3-column layout
+- Network support section with blockchain logos
+- Token features section with a two-column layout
+- Call-to-action section with gradient buttons
+
+### Token Builder
+The token builder maintains the dark gradient theme with:
+- Step-by-step form layout with clear section separation
+- Input fields with dark backgrounds and light text
+- Network selection grid with hover effects
+- Feature toggles with expandable configuration options
+- Warning notifications with amber/yellow accents
+
+### Vesting Configuration
+The vesting page features:
+- Visual timeline representation of vesting schedules
+- Category cards with gradient icons
+- Percentage and date input fields
+- Real-time calculation displays with colored accent cards
+- Quick preset buttons for common vesting periods
+
+### Review & Deploy
+The review page includes:
+- Two-column layout with main content and sidebar
+- Summary cards for token details, features, and vesting
+- Cost estimation panel with network details
+- Final warning notification with amber/red accents
+- Terms acceptance checkbox and deploy button with gradient
+
+### Deployment Success
+The success page features:
+- Large success icon with green gradient
+- Contract details in formatted panels
+- Copy buttons for addresses and transaction hashes
+- Quick action buttons for viewing on explorer and sharing
+- Next steps cards with icon illustrations
+
+### My Tokens
+The tokens dashboard includes:
+- Stats overview cards at the top
+- Network filter buttons with token counts
+- Search and filter controls
+- Token cards with network icons and status indicators
+- Progress indicators and token details
+
+### My Sales
+The sales dashboard features:
+- Stats overview with raised amounts and participant counts
+- Sale cards with progress bars and status indicators
+- Detailed information panels for each sale
+- Action buttons for management functions
+- Filter and search controls with sorting options
+
+### Presale Wizard
+The presale creation wizard includes:
+- Progress indicator at the top showing all steps
+- Step-specific forms with validation
+- Preview panels showing calculated values
+- Network selection with the same design as token builder
+- Review page with deployment confirmation
+
+### Sale Page
+The public sale page features:
+- Sale status banner with countdown timer
+- Progress bar showing raised amount vs cap
+- Token purchase interface with real-time calculation
+- Sale details and token information panels
+- Vesting schedule visualization if enabled
+
+### Sale Explorer
+The sale explorer page includes:
+- Grid layout of available sales
+- Filter and search controls
+- Sale cards with progress indicators
+- Status badges with appropriate colors
+- Network and token information displays
+
 ## Features
 
 - **No-Code Token Creation**: Create tokens with advanced features without writing a single line of code
