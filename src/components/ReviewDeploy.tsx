@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Zap, Clock, Shield, Globe } from 'lucide-react';
 import { TokenConfig, DeploymentResult } from '../types';
 import { RemixFallback } from './RemixFallback';
-import { contractService } from '../services/contractService';
+import { contractService } from '../services/contractService'; 
 import { vestingCategories } from '../data/vestingCategories';
+import { web3Service } from '../services/web3Service';
 
 interface ReviewDeployProps {
   config: TokenConfig;
@@ -13,14 +14,39 @@ interface ReviewDeployProps {
 
 export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDeploy }) => {
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isEstimating, setIsEstimating] = useState(true);
   const [agreed, setAgreed] = useState(false);
   const [deploymentFailed, setDeploymentFailed] = useState(false);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
+  const [useFactory, setUseFactory] = useState(true);
+  const [costEstimate, setCostEstimate] = useState({
+    gasEstimate: '0',
+    gasCost: '0.025',
+    gasCostUsd: '$65',
+    timeEstimate: '1-3 minutes',
+    useFactory: true
+  });
 
-  const estimatedGas = {
-    amount: '0.025',
-    usd: '$65'
-  };
+  // Fetch real gas estimate on component mount
+  useEffect(() => {
+    const fetchGasEstimate = async () => {
+      try {
+        setIsEstimating(true);
+        const estimate = await contractService.estimateDeploymentCost({
+          ...config,
+          useFactory
+        });
+        setCostEstimate(estimate);
+        setUseFactory(estimate.useFactory);
+      } catch (error) {
+        console.error('Error estimating gas:', error);
+      } finally {
+        setIsEstimating(false);
+      }
+    };
+    
+    fetchGasEstimate();
+  }, [config, useFactory]);
 
   const handleDeploy = async () => {
     if (!agreed) return;
@@ -30,7 +56,10 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     
     try {
       // Deploy token using contractService
-      const result = await contractService.deployToken(config);
+      const result = await contractService.deployToken({
+        ...config,
+        useFactory
+      });
       
       onDeploy(result);
     } catch (error) {
@@ -210,19 +239,36 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Network</span>
-                  <span className="text-white font-medium">{config.network.name}</span>
+                  <div className="flex items-center">
+                    <span className="text-white font-medium">{config.network.name}</span>
+                    {isEstimating && (
+                      <div className="ml-2 w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Estimated Gas</span>
-                  <span className="text-white font-medium">{estimatedGas.amount} {config.network.symbol}</span>
+                  <span className="text-white font-medium">{costEstimate.gasCost} {config.network.symbol}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">USD Cost</span>
-                  <span className="text-white font-medium">{estimatedGas.usd}</span>
+                  <span className="text-white font-medium">{costEstimate.gasCostUsd}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Estimated Time</span>
+                  <span className="text-white font-medium">{costEstimate.timeEstimate}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Service Fee</span>
-                  <span className="text-white font-medium">$25</span>
+                  <span className="text-white font-medium">100 ESR (~$25)</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Use Factory</span>
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={useFactory} onChange={(e) => setUseFactory(e.target.checked)} 
+                           className="sr-only peer" />
+                    <div className="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
                 <div className="border-t border-white/20 pt-4">
                   <div className="flex items-center justify-between">
@@ -250,6 +296,12 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
                   <Zap className="w-4 h-4 text-purple-400" />
                   <span className="text-white text-sm">Optimized gas usage</span>
                 </div>
+                {useFactory && (
+                <div className="flex items-center space-x-3">
+                  <Zap className="w-4 h-4 text-green-400" />
+                  <span className="text-white text-sm">Factory deployment (saves ~30% gas)</span>
+                </div>
+                )}
                 <div className="flex items-center space-x-3">
                   <Clock className="w-4 h-4 text-orange-400" />
                   <span className="text-white text-sm">24/7 support</span>

@@ -190,16 +190,141 @@ export class Web3Service {
   async estimateGas(transaction: any): Promise<string> {
     if (!this.provider) throw new Error('Provider not connected');
     
+    const gasEstimate = await this.provider.estimateGas(transaction);
+    const gasPrice = await this.provider.getFeeData();
+    
+    // Use maxFeePerGas if available (EIP-1559), otherwise use gasPrice
+    const effectiveGasPrice = gasPrice.maxFeePerGas || gasPrice.gasPrice || 0n;
+    
+    // Calculate total cost
+    const totalCost = gasEstimate * effectiveGasPrice;
+    return ethers.formatEther(totalCost);
+  }
+  
+  async estimateTokenDeploymentGas(contractType: string, constructorArgs: any[]): Promise<{
+    gasEstimate: bigint;
+    gasCost: string;
+    gasCostUsd: string;
+    timeEstimate: string;
+  }> {
+    if (!this.provider) throw new Error('Provider not connected');
+    if (!this.network) throw new Error('Network not detected');
+    
     try {
-      const gasEstimate = await this.provider.estimateGas(transaction);
-      const gasPrice = await this.provider.getFeeData();
+      // Get contract bytecode and ABI
+      const contractSource = await import('../services/contractSource');
+      const source = contractSource.getContractSource(contractType);
       
-      const totalCost = gasEstimate * (gasPrice.gasPrice || 0n);
-      return ethers.formatEther(totalCost);
+      // Use solc.js to compile the contract
+      const solc = await import('solc');
+      
+      const input = {
+        language: 'Solidity',
+        sources: {
+          'contract.sol': {
+            content: source
+          }
+        },
+        settings: {
+          outputSelection: {
+            '*': {
+              '*': ['abi', 'evm.bytecode']
+            }
+          },
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
+      };
+      
+      const output = JSON.parse(solc.compile(JSON.stringify(input)));
+      
+      if (output.errors) {
+        const errors = output.errors.filter((error: any) => error.severity === 'error');
+        if (errors.length > 0) {
+          throw new Error(`Compilation errors: ${errors.map((e: any) => e.message).join(', ')}`);
+        }
+      }
+      
+      const contract = output.contracts['contract.sol'][contractType];
+      const abi = contract.abi;
+      const bytecode = contract.evm.bytecode.object;
+      
+      // Create contract factory
+      const factory = new ethers.ContractFactory(abi, bytecode, this.signer);
+      
+      // Estimate gas for deployment
+      const deploymentData = factory.interface.encodeDeploy(constructorArgs);
+      const gasEstimate = await this.provider.estimateGas({
+        data: bytecode + deploymentData.slice(2)
+      });
+      
+      // Get gas price
+      const feeData = await this.provider.getFeeData();
+      const effectiveGasPrice = feeData.maxFeePerGas || feeData.gasPrice || 0n;
+      
+      // Calculate total cost
+      const totalCost = gasEstimate * effectiveGasPrice;
+      const gasCost = ethers.formatEther(totalCost);
+      
+      // Estimate USD cost based on current token price
+      // This would ideally use a price oracle, but for now we'll use a simple estimate
+      const tokenPriceUsd = this.getTokenPriceEstimate(this.network.symbol);
+      const gasCostUsd = (parseFloat(gasCost) * tokenPriceUsd).toFixed(2);
+      
+      // Estimate time based on network congestion
+      const timeEstimate = this.getTimeEstimate(this.network.chainId);
+      
+      return {
+        gasEstimate,
+        gasCost,
+        gasCostUsd: `$${gasCostUsd}`,
+        timeEstimate
+      };
     } catch (error) {
       console.error('Error estimating gas:', error);
-      throw error;
+      // Return fallback estimates
+      return {
+        gasEstimate: 0n,
+        gasCost: '0.0',
+        gasCostUsd: '$0.00',
+        timeEstimate: 'unknown'
+      };
     }
+  }
+  
+  private getTokenPriceEstimate(symbol: string): number {
+    // These would ideally come from a price oracle
+    const prices: Record<string, number> = {
+      'ETH': 2500,
+      'BNB': 300,
+      'MATIC': 0.80,
+      'FTM': 0.40,
+      'AVAX': 30,
+      'ESR': 0.25
+    };
+    
+    return prices[symbol] || 0;
+  }
+  
+  private getTimeEstimate(chainId: number): string {
+    // Estimated deployment times based on network
+    const times: Record<number, string> = {
+      1: '2-5 minutes',    // Ethereum
+      5: '30-60 seconds',  // Goerli
+      56: '30-60 seconds', // BSC
+      97: '15-30 seconds', // BSC Testnet
+      137: '30-60 seconds', // Polygon
+      80001: '15-30 seconds', // Mumbai
+      42161: '30-60 seconds', // Arbitrum
+      421614: '15-30 seconds', // Arbitrum Sepolia
+      250: '15-30 seconds', // Fantom
+      43114: '30-60 seconds', // Avalanche
+      25062019: '5-15 seconds' // Estar Testnet
+    };
+    
+    return times[chainId] || '1-3 minutes';
   }
 
   async sendTransaction(transaction: any): Promise<string> {

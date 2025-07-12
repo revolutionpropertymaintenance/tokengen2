@@ -7,6 +7,7 @@ export interface TokenConfig {
   network: Network;
   features: TokenFeatures;
   vesting: VestingConfig[];
+  useFactory?: boolean;
 }
 
 export interface Network {

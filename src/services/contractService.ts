@@ -77,9 +77,12 @@ export class ContractService {
   private getContractType(config: TokenConfig): string {
     const features = config.features;
     
-    if (features.burnable && features.mintable && 
-        (features.transferFees.enabled || features.holderRedistribution.enabled)) {
+    if (features.burnable && features.mintable && features.transferFees.enabled && features.holderRedistribution.enabled) {
       return 'AdvancedToken';
+    } else if (features.burnable && features.mintable && features.transferFees.enabled) {
+      return 'BurnableMintableFeeToken';
+    } else if (features.burnable && features.mintable && features.holderRedistribution.enabled) {
+      return 'BurnableMintableRedistributionToken';
     } else if (features.burnable && features.mintable) {
       return 'BurnableMintableToken';
     } else if (features.burnable) {
@@ -132,10 +135,54 @@ export class ContractService {
     }
   }
 
+  async estimateDeploymentCost(config: TokenConfig): Promise<{
+    gasEstimate: string;
+    gasCost: string;
+    gasCostUsd: string;
+    timeEstimate: string;
+    useFactory: boolean;
+  }> {
+    try {
+      const contractType = this.getContractType(config);
+      const constructorParams = this.getConstructorParams(config);
+      
+      // Get gas estimate from web3Service
+      const estimate = await web3Service.estimateTokenDeploymentGas(contractType, constructorParams);
+      
+      // Determine if factory should be used (cheaper for standard tokens)
+      const useFactory = ['BasicToken', 'BurnableToken', 'MintableToken', 'BurnableMintableToken'].includes(contractType);
+      
+      // If using factory, reduce gas cost by approximately 30%
+      const factoryDiscount = useFactory ? 0.7 : 1.0;
+      
+      return {
+        gasEstimate: estimate.gasEstimate.toString(),
+        gasCost: (parseFloat(estimate.gasCost) * factoryDiscount).toFixed(6),
+        gasCostUsd: estimate.gasCostUsd,
+        timeEstimate: estimate.timeEstimate,
+        useFactory
+      };
+    } catch (error) {
+      console.error('Error estimating deployment cost:', error);
+      
+      // Return fallback estimates
+      return {
+        gasEstimate: '0',
+        gasCost: '0.0',
+        gasCostUsd: '$0.00',
+        timeEstimate: '1-3 minutes',
+        useFactory: false
+      };
+    }
+  }
+
   async deployToken(config: TokenConfig): Promise<DeploymentResult> {
     try {
       const contractType = this.getContractType(config);
       const constructorParams = this.getConstructorParams(config);
+      const useFactory = config.useFactory === undefined ? 
+        ['BasicToken', 'BurnableToken', 'MintableToken', 'BurnableMintableToken'].includes(contractType) : 
+        config.useFactory;
 
       const response = await fetch(`${this.apiUrl}/api/deploy/token`, {
         method: 'POST',
@@ -144,7 +191,8 @@ export class ContractService {
           contractType,
           constructorArgs: constructorParams,
           network: config.network.id,
-          verify: true
+          verify: true,
+          useFactory
         }),
       });
 

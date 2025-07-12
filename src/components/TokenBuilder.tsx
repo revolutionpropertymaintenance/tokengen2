@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
 import { networks } from '../data/networks';
+import { contractService } from '../services/contractService';
 
 interface TokenBuilderProps {
   onBack: () => void;
@@ -17,6 +18,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
     initialSupply: '',
     maxSupply: '',
     network: networks[0],
+    useFactory: true,
     features: {
       burnable: false,
       mintable: false,
@@ -33,6 +35,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
     vesting: [],
     ...initialConfig
   });
+  const [gasEstimate, setGasEstimate] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -79,6 +82,25 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
   const updateConfig = (updates: Partial<TokenConfig>) => {
     setConfig(prev => ({ ...prev, ...updates }));
   };
+
+  // Update gas estimate when features change
+  useEffect(() => {
+    const updateGasEstimate = async () => {
+      if (!config.name || !config.symbol || !config.initialSupply) {
+        return; // Don't estimate until we have basic info
+      }
+      
+      try {
+        const estimate = await contractService.estimateDeploymentCost(config);
+        setGasEstimate(`~${estimate.gasCost} ${config.network.symbol} (${estimate.gasCostUsd})`);
+      } catch (error) {
+        console.error('Error estimating gas:', error);
+        setGasEstimate(null);
+      }
+    };
+    
+    updateGasEstimate();
+  }, [config.features, config.network, config.initialSupply, config.name, config.symbol]);
 
   const updateFeatures = (updates: Partial<TokenConfig['features']>) => {
     setConfig(prev => ({
@@ -205,6 +227,14 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                   <p className="text-sm text-gray-400">Gas: {network.gasPrice}</p>
                 </div>
               ))}
+              {gasEstimate && (
+                <div className="md:col-span-2 lg:col-span-3 mt-4 p-3 bg-blue-500/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Zap className="w-4 h-4 text-blue-400" />
+                    <span className="text-blue-400 font-medium">Estimated Deployment Cost: {gasEstimate}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -365,6 +395,28 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                   </div>
                 )}
               </div>
+            </div>
+            
+            {/* Factory Option */}
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="useFactory"
+                    checked={config.useFactory}
+                    onChange={(e) => updateConfig({ useFactory: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="useFactory" className="text-white font-medium">
+                    Use Token Factory
+                  </label>
+                </div>
+                <Info className="w-4 h-4 text-gray-400" />
+              </div>
+              <span className="text-sm text-gray-400">
+                Reduce gas costs by ~30% (recommended)
+              </span>
             </div>
           </div>
 

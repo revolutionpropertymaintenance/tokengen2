@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Clock, DollarSign, U
 import { PresaleConfig, PresaleDeploymentResult } from '../../types/presale';
 import { ESRBalanceCheck } from '../ESRBalanceCheck';
 import { contractService } from '../../services/contractService';
+import { web3Service } from '../../services/web3Service';
 
 interface PresaleReviewStepProps {
   config: PresaleConfig;
@@ -14,7 +15,77 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
   const [isDeploying, setIsDeploying] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [hasEnoughESR, setHasEnoughESR] = useState(false);
+  const [isEstimating, setIsEstimating] = useState(true);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
+  const [gasEstimate, setGasEstimate] = useState({
+    amount: '0.045',
+    usd: '$95',
+    timeEstimate: '1-3 minutes'
+  });
+
+  // Fetch real gas estimate on component mount
+  useEffect(() => {
+    const fetchGasEstimate = async () => {
+      try {
+        setIsEstimating(true);
+        
+        // Connect to the network
+        const provider = new ethers.JsonRpcProvider(config.network.rpcUrl);
+        
+        // Create a dummy transaction to estimate gas
+        const gasPrice = await provider.getFeeData();
+        const effectiveGasPrice = gasPrice.maxFeePerGas || gasPrice.gasPrice || ethers.parseUnits('50', 'gwei');
+        
+        // Presale contracts typically use around 4-5 million gas
+        const estimatedGas = BigInt(4500000);
+        const gasCost = estimatedGas * effectiveGasPrice;
+        const gasCostEther = ethers.formatEther(gasCost);
+        
+        // Get token price in USD (simplified)
+        const tokenPrices = {
+          'ETH': 2500,
+          'BNB': 300,
+          'MATIC': 0.80,
+          'FTM': 0.40,
+          'AVAX': 30,
+          'ESR': 0.25
+        };
+        
+        const tokenPrice = tokenPrices[config.network.symbol] || 0;
+        const gasCostUsd = (parseFloat(gasCostEther) * tokenPrice).toFixed(2);
+        
+        // Estimate deployment time
+        const deploymentTimes = {
+          'ethereum': '2-5 minutes',
+          'bsc': '30-60 seconds',
+          'polygon': '30-60 seconds',
+          'arbitrum': '30-60 seconds',
+          'fantom': '15-30 seconds',
+          'avalanche': '30-60 seconds',
+          'goerli': '30-60 seconds',
+          'bsc-testnet': '15-30 seconds',
+          'mumbai': '15-30 seconds',
+          'arbitrum-sepolia': '15-30 seconds',
+          'estar-testnet': '5-15 seconds'
+        };
+        
+        const timeEstimate = deploymentTimes[config.network.id] || '1-3 minutes';
+        
+        setGasEstimate({
+          amount: gasCostEther,
+          usd: `$${gasCostUsd}`,
+          timeEstimate
+        });
+      } catch (error) {
+        console.error('Error estimating gas:', error);
+        // Keep default values
+      } finally {
+        setIsEstimating(false);
+      }
+    };
+    
+    fetchGasEstimate();
+  }, [config.network]);
 
   const handleDeploy = async () => {
     if (!agreed || !hasEnoughESR) return;
@@ -41,10 +112,6 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
     }
   };
 
-  const estimatedGas = {
-    amount: '0.045',
-    usd: '$95'
-  };
 
   const getSaleTypeDisplay = () => {
     return config.saleType === 'presale' ? 'Public Presale' : 'Private Sale';
@@ -259,11 +326,20 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
               <div className="flex items-center justify-between">
                 <span className="text-gray-300">ESR Fee</span>
                 <span className="text-white font-medium">100 ESR</span>
-              </div>
+                  <div className="flex items-center">
+                    <span className="text-white font-medium">{config.network.name}</span>
+                    {isEstimating && (
+                      <div className="ml-2 w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                    )}
+                  </div>
               <div className="border-t border-white/20 pt-4">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Total Cost</span>
-                  <span className="text-white font-bold">$120</span>
+                  <span className="text-white font-medium">{gasEstimate.usd}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Estimated Time</span>
+                  <span className="text-white font-medium">{gasEstimate.timeEstimate}</span>
                 </div>
               </div>
             </div>

@@ -8,33 +8,151 @@ async function main() {
     console.log("Deploying contracts with the account:", deployer.address);
     console.log("Account balance:", (await deployer.getBalance()).toString());
 
-    // Get deployment parameters from environment variables
+    // Get deployment parameters from environment variables 
     const contractType = process.env.CONTRACT_TYPE;
     const constructorArgs = JSON.parse(process.env.CONSTRUCTOR_ARGS || "[]");
     const shouldVerify = process.env.VERIFY === "true";
+    const useFactory = process.env.USE_FACTORY === "true";
     const networkName = hre.network.name;
 
     console.log(`Deploying ${contractType} to ${networkName}`);
     console.log("Constructor args:", constructorArgs);
+    console.log("Using factory:", useFactory);
+    
+    let contract;
+    let deploymentTx;
+    
+    if (useFactory) {
+      // Deploy using factory
+      console.log("Deploying using TokenFactory...");
+      
+      // Check if factory exists for this network
+      let factoryAddress;
+      const factoryDeploymentsDir = path.join(__dirname, "..", "deployments", "factories");
+      if (fs.existsSync(factoryDeploymentsDir)) {
+        const factoryFiles = fs.readdirSync(factoryDeploymentsDir);
+        for (const file of factoryFiles) {
+          if (file.startsWith(networkName) && file.endsWith('.json')) {
+            try {
+              const factoryData = JSON.parse(fs.readFileSync(path.join(factoryDeploymentsDir, file), 'utf8'));
+              factoryAddress = factoryData.address;
+              break;
+            } catch (error) {
+              console.error(`Error reading factory file ${file}:`, error);
+            }
+          }
+        }
+      }
+      
+      // If factory doesn't exist, deploy it
+      if (!factoryAddress) {
+        console.log("Factory not found for this network, deploying new factory...");
+        const TokenFactory = await hre.ethers.getContractFactory("TokenFactory");
+        const factory = await TokenFactory.deploy(deployer.address);
+        await factory.waitForDeployment();
+        factoryAddress = await factory.getAddress();
+        
+        // Save factory deployment info
+        if (!fs.existsSync(factoryDeploymentsDir)) {
+          fs.mkdirSync(factoryDeploymentsDir, { recursive: true });
+        }
+        
+        const factoryDeploymentFile = path.join(factoryDeploymentsDir, `${networkName}-factory.json`);
+        fs.writeFileSync(factoryDeploymentFile, JSON.stringify({
+          address: factoryAddress,
+          deployer: deployer.address,
+          network: networkName,
+          timestamp: new Date().toISOString()
+        }, null, 2));
+        
+        console.log(`TokenFactory deployed to: ${factoryAddress}`);
+      } else {
+        console.log(`Using existing factory at: ${factoryAddress}`);
+      }
+      
+      // Create token using factory
+      const factory = await hre.ethers.getContractAt("TokenFactory", factoryAddress);
+      
+      // Determine which factory method to call based on contract type
+      let tx;
+      switch (contractType) {
+        case 'BasicToken':
+          tx = await factory.createBasicToken(...constructorArgs);
+          break;
+        case 'BurnableToken':
+          tx = await factory.createBurnableToken(...constructorArgs);
+          break;
+        case 'MintableToken':
+          tx = await factory.createMintableToken(...constructorArgs);
+          break;
+        case 'BurnableMintableToken':
+          tx = await factory.createBurnableMintableToken(...constructorArgs);
+          break;
+        case 'FeeToken':
+          tx = await factory.createFeeToken(...constructorArgs);
+          break;
+        case 'RedistributionToken':
+          tx = await factory.createRedistributionToken(...constructorArgs);
+          break;
+        case 'AdvancedToken':
+          tx = await factory.createAdvancedToken(...constructorArgs);
+          break;
+        default:
+          throw new Error(`Unsupported contract type for factory: ${contractType}`);
+      }
+      
+      // Wait for transaction
+      const receipt = await tx.wait();
+      
+      // Find token address from event logs
+      const tokenCreatedEvent = receipt.logs.find(log => {
+        try {
+          const parsedLog = factory.interface.parseLog(log);
+          return parsedLog && parsedLog.name === 'TokenCreated';
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      if (!tokenCreatedEvent) {
+        throw new Error('Failed to find token address in event logs');
+      }
+      
+      const parsedEvent = factory.interface.parseLog(tokenCreatedEvent);
+      const contractAddress = parsedEvent.args[1];
+      
+      // Get contract instance
+      contract = await hre.ethers.getContractAt(contractType, contractAddress);
+      deploymentTx = tx;
+      
+      console.log(`${contractType} deployed to:`, contractAddress);
+      console.log("Transaction hash:", tx.hash);
+    } else {
+      // Direct deployment
+      console.log("Deploying directly...");
 
-    // Get contract factory
-    const ContractFactory = await hre.ethers.getContractFactory(contractType);
+      // Get contract factory
+      const ContractFactory = await hre.ethers.getContractFactory(contractType);
+      
+      // Deploy contract
+      console.log("Deploying contract...");
+      contract = await ContractFactory.deploy(...constructorArgs);
+      
+      // Wait for deployment
+      await contract.waitForDeployment();
+      const contractAddress = await contract.getAddress();
+      
+      console.log(`${contractType} deployed to:`, contractAddress);
+      
+      // Get deployment transaction
+      deploymentTx = contract.deploymentTransaction();
+      
+      console.log("Transaction hash:", deploymentTx.hash);
+    }
     
-    // Deploy contract
-    console.log("Deploying contract...");
-    const contract = await ContractFactory.deploy(...constructorArgs);
-    
-    // Wait for deployment
-    await contract.waitForDeployment();
-    const contractAddress = await contract.getAddress();
-    
-    console.log(`${contractType} deployed to:`, contractAddress);
-    
-    // Get deployment transaction
-    const deploymentTx = contract.deploymentTransaction();
+    // Get transaction receipt
     const receipt = await deploymentTx.wait();
     
-    console.log("Transaction hash:", deploymentTx.hash);
     console.log("Gas used:", receipt.gasUsed.toString());
     
     // Save deployment info
