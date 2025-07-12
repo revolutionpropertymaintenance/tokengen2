@@ -11,6 +11,9 @@ TokenForge now uses **Hardhat** for all contract deployments, providing:
 - **Gas Optimization**: Optimized contracts with reduced deployment costs
 - **Deployment Tracking**: Complete deployment history and status monitoring
 - **Backend Security**: Secure API-based deployment with authentication
+- **Real Blockchain Integration**: Live data fetching from actual contracts
+- **ESR Token Integration**: Real ESR token balance checking and deduction
+- **Dynamic RPC Configuration**: Environment-based RPC endpoints for all networks
 
 ### Architecture Overview
 
@@ -23,6 +26,26 @@ Blockchain Networks
 ```
 
 The platform now operates with a secure backend service that handles all contract compilation and deployment using Hardhat, while the frontend provides the user interface and wallet integration.
+
+## 🔗 Real Blockchain Integration Features
+
+### ESR Token Integration
+- **Real Balance Checking**: Actual ESR token balance queries using ethers.js
+- **Token Deduction**: Real token transfers to platform wallet with transaction confirmation
+- **Transaction Tracking**: Complete transaction status monitoring and confirmation
+- **Error Handling**: Comprehensive error handling for failed transactions
+
+### Live Data Fetching
+- **Token Statistics**: Real-time holder count, transfer count, and supply data
+- **Sale Statistics**: Live presale data including raised amounts and participant counts
+- **Auto-Refresh**: Periodic updates every 15-30 seconds for live data
+- **Status Calculation**: Real-time status based on actual dates and contract state
+
+### Dynamic Network Configuration
+- **Environment-Based RPC**: All networks use environment variables with fallbacks
+- **Multiple Providers**: Support for Infura, Alchemy, and custom RPC providers
+- **Automatic Failover**: Fallback to public RPCs if custom endpoints fail
+- **Network Detection**: Automatic network switching and validation
 
 ## Theme Colors and CSS
 
@@ -612,9 +635,14 @@ The sale explorer page includes:
 - **Hardhat-Powered Deployment**: Professional-grade contract deployment using industry-standard tools
 - **Secure Backend Architecture**: API-based deployment with JWT authentication
 - **Automatic Contract Verification**: All contracts verified on blockchain explorers
+- **Real Blockchain Integration**: Live data from actual smart contracts
+- **ESR Token System**: Real ESR token balance checking and deduction for deployments
+- **Dynamic RPC Configuration**: Environment-based network configuration
 - **No-Code Token Creation**: Create tokens with advanced features without writing code
 - **Multi-Chain Support**: Deploy on Ethereum, BSC, Polygon, Arbitrum, Fantom, Avalanche, and more
 - **Real-time Deployment Tracking**: Monitor deployment status and transaction confirmations
+- **Live Statistics**: Real-time token and sale statistics from blockchain
+- **Auto-Refresh Data**: Periodic updates for live sales and token data
 - **Advanced Token Features**:
   - Burnable tokens
   - Mintable supply
@@ -680,6 +708,7 @@ Create a `.env` file in the root directory with the following variables:
 ```env
 # Network RPC URLs (required)
 ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
+VITE_ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
 BSC_RPC_URL=https://bsc-dataseed.binance.org/
 POLYGON_RPC_URL=https://polygon-rpc.com/
 # ... add other networks as needed
@@ -689,12 +718,45 @@ ETHERSCAN_API_KEY=your_etherscan_api_key
 BSCSCAN_API_KEY=your_bscscan_api_key
 POLYGONSCAN_API_KEY=your_polygonscan_api_key
 
+# ESR Token Configuration (required for mainnet deployments)
+VITE_ESR_TOKEN_ADDRESS=0xYOUR_ESR_TOKEN_CONTRACT_ADDRESS
+ESR_TOKEN_ADDRESS=0xYOUR_ESR_TOKEN_CONTRACT_ADDRESS
+
 # Server Configuration
 PORT=3001
 JWT_SECRET=your_secure_jwt_secret_key
 ```
 
 ## Usage
+
+### Prerequisites
+
+Before using TokenForge, ensure you have:
+
+1. **ESR Tokens**: For mainnet deployments, you need ESR tokens in your wallet
+   - Testnet deployments are free
+   - Mainnet deployments require 100 ESR tokens
+
+2. **Network Tokens**: Sufficient native tokens for gas fees
+   - ETH for Ethereum
+   - BNB for BSC
+   - MATIC for Polygon
+   - etc.
+
+3. **RPC Access**: Configure RPC endpoints in your environment
+   - Use Infura, Alchemy, or other providers
+   - Public RPCs are available as fallbacks
+
+### ESR Token Setup
+
+1. **Get ESR Tokens**: Acquire ESR tokens from supported exchanges
+2. **Configure Address**: Set `VITE_ESR_TOKEN_ADDRESS` in your environment
+3. **Check Balance**: The platform will automatically check your ESR balance
+4. **Automatic Deduction**: ESR tokens are automatically deducted during deployment
+
+### Network Configuration
+
+The platform automatically uses your configured RPC endpoints with intelligent fallbacks to public RPCs if your custom endpoints are unavailable.
 
 ### 1. Connect Your Wallet
 
@@ -704,7 +766,7 @@ JWT_SECRET=your_secure_jwt_secret_key
 
 ### 2. Create a Token
 
-1. Click "Start Building" on the home page
+1. **Click "Start Building"** on the home page
 2. The system will authenticate your wallet using message signing
 3. Configure your token parameters:
    - Token name and symbol
@@ -718,12 +780,14 @@ JWT_SECRET=your_secure_jwt_secret_key
    - Holder redistribution
 5. Configure vesting schedules (optional)
 6. Review your configuration
-7. Deploy using Hardhat (requires gas fees + ESR tokens for mainnet)
+7. **Deploy using Hardhat** (requires gas fees + ESR tokens for mainnet)
+   - ESR tokens are automatically deducted
+   - Real-time deployment tracking
 
 ### 3. Launch a Sale
 
-1. Click "Launch Sale" on the home page
-2. Select sale type (Presale or Private Sale)
+1. **Click "Launch Sale"** on the home page
+2. **Select sale type** (Presale or Private Sale)
 3. Select your token
 4. Configure sale parameters:
    - Soft cap and hard cap
@@ -734,13 +798,19 @@ JWT_SECRET=your_secure_jwt_secret_key
 6. Configure wallet addresses
 7. Review and deploy
 
+### 4. Monitor Your Deployments
+
+- **Real-time Statistics**: View live holder counts, transfer data, and sale progress
+- **Auto-Refresh**: Data updates automatically every 15-30 seconds
+- **Status Tracking**: Real-time status based on actual blockchain state
+
 ## Deployment Architecture
 
 ### Hardhat-Based Deployment (Production)
 
 TokenForge uses Hardhat for all contract deployments, providing enterprise-grade reliability:
 
-1. Connect your wallet
+1. **Connect your wallet** and authenticate
 2. Authenticate using wallet message signing
 3. Configure token parameters in the frontend
 4. Submit deployment request to secure API
@@ -748,6 +818,7 @@ TokenForge uses Hardhat for all contract deployments, providing enterprise-grade
 6. Contract deployed to selected network
 7. Automatic verification on blockchain explorer
 8. Deployment details saved and tracked
+9. **Real-time statistics** begin updating automatically
 
 ### Deployment Process Flow
 
@@ -762,6 +833,9 @@ User Input → Frontend Validation → API Authentication → Hardhat Compilatio
 - **Input Validation**: Comprehensive validation of all user inputs
 - **Secure Compilation**: Server-side contract compilation using Hardhat
 - **Automatic Verification**: All contracts verified on blockchain explorers
+- **ESR Token Integration**: Secure ESR token deduction for deployments
+- **Real-time Monitoring**: Live blockchain data integration
+- **Dynamic Configuration**: Environment-based network and RPC configuration
 - **Deployment Tracking**: Complete audit trail of all deployments
 
 ### Supported Networks
@@ -783,11 +857,17 @@ All deployments are handled through Hardhat with the following networks configur
 - Polygon Mumbai (MATIC) - Chain ID: 80001
 - Arbitrum Sepolia (ETH) - Chain ID: 421614
 
-## ESR Token Requirements
+## ESR Token System
 
+### Requirements
 - Mainnet deployments require 100 ESR tokens
 - Testnet deployments are free
 - ESR tokens are used for platform fees and are burned during deployment
+
+### Integration
+- **Real Balance Checking**: Live ESR token balance from your wallet
+- **Automatic Deduction**: ESR tokens automatically transferred during deployment
+- **Transaction Confirmation**: Full transaction tracking and confirmation
 
 ## API Documentation
 
