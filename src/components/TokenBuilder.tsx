@@ -262,28 +262,30 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                 </div>
               ))}
               {gasEstimate && (
-            
-            {/* Network Mode Indicator */}
-            <div className={`p-3 rounded-lg ${
-              isTestnetMode 
-                ? 'bg-amber-500/20 border border-amber-500/50' 
-                : 'bg-blue-500/20 border border-blue-500/50'
-            }`}>
-              <div className="flex items-center space-x-2">
-                <span className={isTestnetMode ? 'text-amber-400' : 'text-blue-400'}>
-                  {isTestnetMode ? '⚠️ Testnet Mode Active' : '🔵 Mainnet Mode Active'}
-                </span>
-                <span className="text-sm text-gray-300">
-                  (Toggle in header to change)
-                </span>
-              </div>
-            </div>
+                <>
                 <div className="md:col-span-2 lg:col-span-3 mt-4 p-3 bg-blue-500/20 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <Zap className="w-4 h-4 text-blue-400" />
                     <span className="text-blue-400 font-medium">Estimated Deployment Cost: {gasEstimate}</span>
                   </div>
                 </div>
+                
+                {/* Network Mode Indicator */}
+                <div className={`md:col-span-2 lg:col-span-3 p-3 rounded-lg ${
+                  isTestnetMode 
+                    ? 'bg-amber-500/20 border border-amber-500/50' 
+                    : 'bg-blue-500/20 border border-blue-500/50'
+                }`}>
+                  <div className="flex items-center space-x-2">
+                    <span className={isTestnetMode ? 'text-amber-400' : 'text-blue-400'}>
+                      {isTestnetMode ? '⚠️ Testnet Mode Active' : '🔵 Mainnet Mode Active'}
+                    </span>
+                    <span className="text-sm text-gray-300">
+                      (Toggle in header to change)
+                    </span>
+                  </div>
+                </div>
+                </>
               )}
             </div>
           </div>
