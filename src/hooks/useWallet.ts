@@ -81,8 +81,6 @@ export const useWallet = () => {
         
         // Refresh page on chain change to ensure all data is updated
         window.location.reload();
-          chainId: parseInt(chainId, 16)
-        }));
       };
 
       window.ethereum.on('accountsChanged', handleAccountsChanged);
