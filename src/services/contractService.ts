@@ -497,6 +497,7 @@ export class ContractService {
     holders: number;
     transfers: number;
     totalSupply: string;
+    lastUpdated: string;
   }> {
     try {
       const response = await fetch(`${this.apiUrl}/api/contracts/${contractAddress}/stats?network=${network.id}`, {
@@ -523,12 +524,41 @@ export class ContractService {
       return {
         holders: data.holders || 0,
         transfers: data.transfers || 0,
-        totalSupply: data.totalSupply || '0'
+        totalSupply: data.totalSupply || '0',
+        lastUpdated: data.lastUpdated || new Date().toISOString()
       };
     } catch (error) {
       console.error('Error fetching token statistics:', error);
-      reportError(new AppError('Failed to fetch token statistics', ErrorType.SERVER, error));
-      return { holders: 0, transfers: 0, totalSupply: '0' };
+      const appError = new AppError('Failed to fetch token statistics', ErrorType.SERVER, error);
+      reportError(appError);
+      
+      // Retry once after a short delay
+      try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const response = await fetch(`${this.apiUrl}/api/contracts/${contractAddress}/stats?network=${network.id}`, {
+          headers: this.getAuthHeaders(),
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            holders: data.holders || 0,
+            transfers: data.transfers || 0,
+            totalSupply: data.totalSupply || '0',
+            lastUpdated: data.lastUpdated || new Date().toISOString()
+          };
+        }
+      } catch (retryError) {
+        console.error('Retry failed:', retryError);
+      }
+      
+      return { 
+        holders: 0, 
+        transfers: 0, 
+        totalSupply: '0',
+        lastUpdated: new Date().toISOString()
+      };
     }
   }
 

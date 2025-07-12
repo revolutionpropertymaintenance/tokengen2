@@ -10,6 +10,7 @@ import { DeployedTokens } from './components/DeployedTokens';
 import { SaleRouter } from './components/SaleRouter';
 import { SaleExplorer } from './components/SaleExplorer';
 import { TokenManagement } from './components/TokenManagement';
+import { NotFound } from './components/NotFound';
 import { ModeBanner } from './components/ModeBanner';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -169,19 +170,28 @@ function App() {
     case 'manage':
       return <ErrorBoundary><ModeBanner /><TokenManagement /></ErrorBoundary>;
     
+    case '404':
+      return <ErrorBoundary><NotFound /></ErrorBoundary>;
+    
     default:
-      return (
-        <ErrorBoundary>
-        <ModeBanner />
-        <LandingPage 
-          onGetStarted={handleGetStarted}
-          onLaunchSale={handleLaunchSale}
-          onViewSales={handleViewSales}
-          onViewTokens={handleViewTokens}
-          onExploreSales={handleExploreSales}
-        />
-        </ErrorBoundary>
-      );
+      // Check if this is a valid route
+      const validRoutes = ['landing', 'builder', 'vesting', 'review', 'success', 'presale', 'sales', 'tokens', 'sale', 'explore', 'manage'];
+      if (!validRoutes.includes(currentStep)) {
+        return <ErrorBoundary><NotFound /></ErrorBoundary>;
+      } else {
+        return (
+          <ErrorBoundary>
+          <ModeBanner />
+          <LandingPage 
+            onGetStarted={handleGetStarted}
+            onLaunchSale={handleLaunchSale}
+            onViewSales={handleViewSales}
+            onViewTokens={handleViewTokens}
+            onExploreSales={handleExploreSales}
+          />
+          </ErrorBoundary>
+        );
+      }
   }
 }
 

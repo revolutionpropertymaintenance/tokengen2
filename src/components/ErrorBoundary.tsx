@@ -1,9 +1,11 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Home, ArrowLeft } from 'lucide-react';
 import { AppError, handleError } from '../services/errorHandler';
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -22,14 +24,33 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    console.error('Error caught by boundary:', error, errorInfo);
     
-    // You could also log to an error reporting service here
-    // logErrorToService(error, errorInfo);
+    // Call onError callback if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+    
+    // Report to error service
+    try {
+      // In production, send to error tracking service
+      if (process.env.NODE_ENV === 'production') {
+        // This would be replaced with actual error reporting service
+        console.log('Would send to error tracking service in production');
+        // Example: Sentry.captureException(error, { extra: { errorInfo } });
+      }
+    } catch (reportError) {
+      console.error('Failed to report error:', reportError);
+    }
   }
 
   public render() {
     if (this.state.hasError) {
+      // Use custom fallback if provided
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+      
       const appError = handleError(this.state.error);
       
       return (
@@ -39,6 +60,11 @@ export class ErrorBoundary extends Component<Props, State> {
             <h2 className="text-xl font-bold text-white mb-2">Something went wrong</h2>
             <p className="text-gray-300 mb-6">
               {appError.getUserMessage()}
+              {process.env.NODE_ENV === 'development' && 
+                <span className="block mt-2 text-xs text-gray-400">
+                  Error ID: {Date.now().toString(36)}
+                </span>
+              }
             </p>
             <div className="space-y-4">
               <button
@@ -47,6 +73,14 @@ export class ErrorBoundary extends Component<Props, State> {
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Reload Page</span>
+              </button>
+              
+              <button
+                onClick={() => window.location.href = '/'}
+                className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 w-full"
+              >
+                <Home className="w-4 h-4" />
+                <span>Go to Home Page</span>
               </button>
               
               <button

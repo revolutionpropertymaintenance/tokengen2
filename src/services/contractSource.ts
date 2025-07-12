@@ -1,7 +1,27 @@
 // This file contains the source code for the contracts
 // In a production environment, these would be loaded from actual .sol files
 
+// Cache for compiled contracts to avoid recompilation
+const contractCache: Record<string, { bytecode: string, abi: any }> = {};
+
 export function getContractSource(contractType: string): string {
+  // Validate contract type
+  const validContractTypes = [
+    'BasicToken',
+    'BurnableToken',
+    'MintableToken',
+    'BurnableMintableToken',
+    'FeeToken',
+    'RedistributionToken',
+    'AdvancedToken',
+    'TokenVesting',
+    'PresaleContract'
+  ];
+  
+  if (!validContractTypes.includes(contractType)) {
+    throw new Error(`Invalid contract type: ${contractType}. Valid types are: ${validContractTypes.join(', ')}`);
+  }
+  
   switch (contractType) {
     case 'BasicToken':
       return `
@@ -970,5 +990,65 @@ contract PresaleContract is ReentrancyGuard, Ownable, Pausable {
     
     default:
       throw new Error(`Contract type ${contractType} not found`);
+  }
+}
+
+// Get compiled contract (bytecode and ABI)
+export async function getCompiledContract(contractType: string) {
+  // Check cache first
+  if (contractCache[contractType]) {
+    return contractCache[contractType];
+  }
+  
+  try {
+    // Get contract source
+    const source = getContractSource(contractType);
+    
+    // Use solc.js to compile the contract
+    const solc = await import('solc');
+    
+    const input = {
+      language: 'Solidity',
+      sources: {
+        'contract.sol': {
+          content: source
+        }
+      },
+      settings: {
+        outputSelection: {
+          '*': {
+            '*': ['abi', 'evm.bytecode']
+          }
+        },
+        optimizer: {
+          enabled: true,
+          runs: 200
+        }
+      }
+    };
+    
+    const output = JSON.parse(solc.compile(JSON.stringify(input)));
+    
+    // Check for errors
+    if (output.errors) {
+      const errors = output.errors.filter((error: any) => error.severity === 'error');
+      if (errors.length > 0) {
+        throw new Error(`Compilation errors: ${errors.map((e: any) => e.message).join(', ')}`);
+      }
+    }
+    
+    const contract = output.contracts['contract.sol'][contractType];
+    const result = {
+      bytecode: contract.evm.bytecode.object,
+      abi: contract.abi
+    };
+    
+    // Cache the result
+    contractCache[contractType] = result;
+    
+    return result;
+  } catch (error) {
+    console.error(`Error compiling contract ${contractType}:`, error);
+    throw error;
   }
 }

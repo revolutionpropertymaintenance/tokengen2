@@ -29,14 +29,14 @@ export const useESRToken = (): ESRTokenHook => {
   const checkBalance = useCallback(async (address: string) => {
     if (!address) {
       setBalance(0);
-      setError('No wallet address provided');
+      setError('Please connect your wallet to check ESR balance');
       return;
     }
     
     if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
       console.warn('ESR Token address not configured');
       setBalance(0);
-      setError('ESR Token address not configured');
+      setError('ESR Token address not properly configured. Please contact support.');
       return;
     }
 
@@ -55,8 +55,8 @@ export const useESRToken = (): ESRTokenHook => {
       // If this is a testnet, simulate a balance for testing
       if (isTestnet(chainId)) {
         console.log('Testnet detected, simulating ESR balance');
-        // Simulate a balance of 1000 ESR on testnets
-        setBalance(1000);
+        // Simulate a realistic balance of 500 ESR on testnets
+        setBalance(500);
         setIsLoading(false);
         return;
       }
@@ -80,6 +80,11 @@ export const useESRToken = (): ESRTokenHook => {
       // Store balance in local storage for persistence
       localStorage.setItem('esrBalance', formattedBalance.toString());
       localStorage.setItem('esrBalanceTimestamp', Date.now().toString());
+      
+      // If balance is very low, show a warning
+      if (formattedBalance < 10) {
+        setError('Your ESR balance is low. You may need more tokens for deployments.');
+      }
       
     } catch (error) {
       const errorMessage = (error as Error).message || 'Unknown error';
@@ -113,12 +118,20 @@ export const useESRToken = (): ESRTokenHook => {
       // Check if we're on a testnet
       const network = await web3Service.getCurrentNetwork();
       if (network && isTestnet(network.chainId)) {
-        console.log('Testnet detected, simulating ESR token deduction');
-        // Simulate successful deduction on testnet
-        setTimeout(() => {
-          setBalance(prev => Math.max(0, prev - amount));
-        }, 1000);
-        return 'testnet-simulated-tx-hash';
+        // Even on testnet, we should simulate a realistic transaction
+        console.log('Testnet detected, simulating ESR token deduction with realistic delay');
+        
+        // Show loading state for a realistic amount of time
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Update balance
+        setBalance(prev => Math.max(0, prev - amount));
+        
+        // Generate a realistic looking hash
+        const hash = '0x' + Array.from({length: 64}, () => 
+          '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+        
+        return hash;
       }
       
       const signer = web3Service.getSigner();

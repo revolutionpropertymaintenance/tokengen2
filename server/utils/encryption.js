@@ -3,13 +3,30 @@ const crypto = require('crypto');
 // Encryption key management
 const getEncryptionKey = () => {
   const key = process.env.ENCRYPTION_KEY;
-  if (!key) {
-    throw new Error('ENCRYPTION_KEY environment variable is not set');
+  
+  // Check if key exists
+  if (!key || key.trim() === '') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ENCRYPTION_KEY environment variable is not set in production environment');
+    } else {
+      // In development, use a default key (but warn)
+      console.warn('WARNING: Using default encryption key for development. DO NOT use in production!');
+      return Buffer.from('0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef', 'hex');
+    }
   }
   
   // Ensure key is 32 bytes (256 bits)
   if (Buffer.from(key, 'hex').length !== 32) {
-    throw new Error('ENCRYPTION_KEY must be a 32-byte (64 character) hex string');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ENCRYPTION_KEY must be a 32-byte (64 character) hex string');
+    } else {
+      // In development, pad or truncate the key (but warn)
+      console.warn('WARNING: Encryption key is not 32 bytes. Adjusting for development only.');
+      const rawKey = Buffer.from(key, 'hex');
+      const adjustedKey = Buffer.alloc(32);
+      rawKey.copy(adjustedKey, 0, 0, Math.min(rawKey.length, 32));
+      return adjustedKey;
+    }
   }
   
   return Buffer.from(key, 'hex');
@@ -18,6 +35,10 @@ const getEncryptionKey = () => {
 // Encrypt sensitive data
 const encrypt = (text) => {
   try {
+    if (!text) {
+      throw new Error('Cannot encrypt empty or null data');
+    }
+    
     const key = getEncryptionKey();
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -32,13 +53,29 @@ const encrypt = (text) => {
     return `${iv.toString('hex')}:${encrypted}:${authTag}`;
   } catch (error) {
     console.error('Encryption error:', error);
-    throw new Error('Failed to encrypt data');
+    
+    if (process.env.NODE_ENV === 'production') {
+      // In production, don't expose internal errors
+      throw new Error('Data encryption failed');
+    } else {
+      // In development, provide more details
+      throw new Error(`Failed to encrypt data: ${error.message}`);
+    }
   }
 };
 
 // Decrypt sensitive data
 const decrypt = (text) => {
   try {
+    if (!text) {
+      throw new Error('Cannot decrypt empty or null data');
+    }
+    
+    // Validate format
+    if (!text.includes(':') || text.split(':').length !== 3) {
+      throw new Error('Invalid encrypted data format');
+    }
+    
     const key = getEncryptionKey();
     const [ivHex, encryptedText, authTagHex] = text.split(':');
     
@@ -54,7 +91,14 @@ const decrypt = (text) => {
     return decrypted;
   } catch (error) {
     console.error('Decryption error:', error);
-    throw new Error('Failed to decrypt data');
+    
+    if (process.env.NODE_ENV === 'production') {
+      // In production, don't expose internal errors
+      throw new Error('Data decryption failed');
+    } else {
+      // In development, provide more details
+      throw new Error(`Failed to decrypt data: ${error.message}`);
+    }
   }
 };
 

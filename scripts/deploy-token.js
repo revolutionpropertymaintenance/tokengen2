@@ -177,11 +177,31 @@ async function main() {
     // Save deployment info to file
     const deploymentFile = path.join(deploymentsDir, `${networkName}-${contractAddress}.json`);
     fs.writeFileSync(deploymentFile, JSON.stringify(deploymentInfo, null, 2));
+
+    // Add a delay before verification to ensure the contract is fully deployed
+    if (shouldVerify && networkName !== "hardhat" && networkName !== "localhost") {
+      console.log("Waiting for block confirmations before verification...");
     
     // Verify contract if requested
     if (shouldVerify && networkName !== "hardhat" && networkName !== "localhost") {
       console.log("Waiting for block confirmations...");
-      await contract.deploymentTransaction().wait(5); // Wait for 5 confirmations
+      // Different networks need different confirmation counts
+      const confirmations = {
+        'ethereum': 5,
+        'bsc': 15,
+        'polygon': 10,
+        'arbitrum': 5,
+        'fantom': 5,
+        'avalanche': 5,
+        'goerli': 3,
+        'bsc-testnet': 5,
+        'mumbai': 5,
+        'arbitrum-sepolia': 3,
+        'estar-testnet': 3
+      };
+      
+      const confirmationCount = confirmations[networkName] || 5;
+      await contract.deploymentTransaction().wait(confirmationCount);
       
       console.log("Verifying contract...");
       try {
@@ -192,9 +212,26 @@ async function main() {
         console.log("Contract verified successfully");
         deploymentInfo.verified = true;
       } catch (error) {
-        console.error("Verification failed:", error.message);
+        console.error("Verification failed:", error);
         deploymentInfo.verified = false;
         deploymentInfo.verificationError = error.message;
+        
+        // Try verification again with a delay
+        console.log("Retrying verification after delay...");
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        
+        try {
+          await hre.run("verify:verify", {
+            address: contractAddress,
+            constructorArguments: constructorArgs,
+          });
+          console.log("Contract verified successfully on second attempt");
+          deploymentInfo.verified = true;
+          delete deploymentInfo.verificationError;
+        } catch (retryError) {
+          console.error("Verification retry failed:", retryError.message);
+          deploymentInfo.verificationError = `${error.message}. Retry failed: ${retryError.message}`;
+        }
       }
       
       // Update deployment file with verification status

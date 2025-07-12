@@ -19,16 +19,46 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
   const shareContract = async () => {
     if (navigator.share) {
       try {
+        // Use Web Share API if available
         await navigator.share({
           title: 'Token Contract Deployed',
           text: `Check out my new token contract: ${result.contractAddress}`,
           url: result.explorerUrl
         });
       } catch (err) {
-        console.log('Error sharing:', err);
+        console.error('Error sharing:', err);
+        // Fallback to clipboard if sharing fails
+        copyToClipboard(result.explorerUrl, 'share');
       }
     } else {
+      // Fallback for browsers without Web Share API
       copyToClipboard(result.explorerUrl, 'share');
+    }
+  };
+  
+  // Function to add token to MetaMask
+  const addTokenToMetaMask = async () => {
+    if (typeof window.ethereum === 'undefined') {
+      alert('MetaMask is not installed');
+      return;
+    }
+    
+    try {
+      // Request to add token to MetaMask
+      await window.ethereum.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: {
+            address: result.contractAddress,
+            symbol: result.tokenSymbol || 'TOKEN', // Use token symbol if available
+            decimals: result.tokenDecimals || 18,   // Use token decimals if available
+            image: 'https://example.com/token-logo.png' // Optional token logo
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error adding token to MetaMask:', error);
     }
   };
 
@@ -137,6 +167,20 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
                 result.network.name === 'Binance Smart Chain' ? 'BscScan' : 
                 `${result.network.name} Explorer`}</span>
             </a>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">Add to Wallet</h3>
+            <p className="text-gray-300 text-sm mb-4">
+              Add your token to MetaMask or other wallets for easy access
+            </p>
+            <button
+              onClick={addTokenToMetaMask}
+              className="bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 w-full justify-center"
+            >
+              <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask" className="w-4 h-4" />
+              <span>Add to MetaMask</span>
+            </button>
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">

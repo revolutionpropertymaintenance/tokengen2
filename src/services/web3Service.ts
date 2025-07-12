@@ -419,16 +419,52 @@ export class Web3Service {
   
   private getTokenPriceEstimate(symbol: string): number {
     // These would ideally come from a price oracle
-    const prices: Record<string, number> = {
-      'ETH': 2500,
-      'BNB': 300,
-      'MATIC': 0.80,
-      'FTM': 0.40,
-      'AVAX': 30,
-      'ESR': 0.25
+    // Implement real price feed integration
+    return new Promise<number>(async (resolve) => {
+      try {
+        // Try to get price from a reliable API
+        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbolToId(symbol)}&vs_currencies=usd`);
+        const data = await response.json();
+        const price = data[symbolToId(symbol)]?.usd;
+        if (price) {
+          return resolve(price);
+        }
+        // Fallback to static prices if API fails
+        const fallbackPrices: Record<string, number> = {
+          'ETH': 3500,
+          'BNB': 550,
+          'MATIC': 1.20,
+          'FTM': 0.65,
+          'AVAX': 35,
+          'ESR': 0.50
+        };
+        resolve(fallbackPrices[symbol] || 0);
+      } catch (error) {
+        console.error('Error fetching token price:', error);
+        // Fallback prices if API call fails
+        const fallbackPrices: Record<string, number> = {
+          'ETH': 3500,
+          'BNB': 550,
+          'MATIC': 1.20,
+          'FTM': 0.65,
+          'AVAX': 35,
+          'ESR': 0.50
+        };
+        resolve(fallbackPrices[symbol] || 0);
+      }
+    });
+  }
+  
+  private symbolToId(symbol: string): string {
+    const mapping: Record<string, string> = {
+      'ETH': 'ethereum',
+      'BNB': 'binancecoin',
+      'MATIC': 'matic-network',
+      'FTM': 'fantom',
+      'AVAX': 'avalanche-2',
+      'ESR': 'estar'
     };
-    
-    return prices[symbol] || 0;
+    return mapping[symbol] || symbol.toLowerCase();
   }
   
   private getTimeEstimate(chainId: number): string {

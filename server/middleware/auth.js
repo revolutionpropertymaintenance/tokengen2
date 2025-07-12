@@ -5,38 +5,71 @@ const { verifyHash } = require('../utils/encryption');
 // Authenticate user with JWT
 function authenticate(req, res, next) {
   try {
+    // Check for authorization header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
+      return res.status(401).json({ 
+        error: 'Authentication required', 
+        message: 'Please connect your wallet to access this resource',
+        code: 'AUTH_REQUIRED'
+      });
     }
     
     const token = authHeader.split(' ')[1];
     
     try {
+      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Check token expiration
       if (decoded.exp < Date.now() / 1000) {
-        return res.status(401).json({ error: 'Token expired' });
+        return res.status(401).json({ 
+          error: 'Session expired', 
+          message: 'Your session has expired. Please reconnect your wallet.',
+          code: 'TOKEN_EXPIRED'
+        });
       }
       
       // Set user info in request
       req.user = decoded;
+      
+      // Update last activity timestamp in database
+      query(
+        'UPDATE users SET last_activity = CURRENT_TIMESTAMP WHERE address = $1',
+        [decoded.address.toLowerCase()]
+      ).catch(err => console.error('Error updating user activity:', err));
+      
       next();
     } catch (error) {
       if (error.name === 'JsonWebTokenError') {
-        return res.status(401).json({ error: 'Invalid token' });
+        return res.status(401).json({ 
+          error: 'Invalid authentication', 
+          message: 'Your session is invalid. Please reconnect your wallet.',
+          code: 'TOKEN_INVALID'
+        });
       } else if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({ error: 'Token expired' });
+        return res.status(401).json({ 
+          error: 'Session expired', 
+          message: 'Your session has expired. Please reconnect your wallet.',
+          code: 'TOKEN_EXPIRED'
+        });
       } else {
         console.error('Token verification error:', error);
-        return res.status(500).json({ error: 'Authentication failed' });
+        return res.status(500).json({ 
+          error: 'Authentication error', 
+          message: 'An error occurred during authentication. Please try again.',
+          code: 'AUTH_ERROR'
+        });
       }
     }
   } catch (error) {
     console.error('Authentication error:', error);
-    return res.status(500).json({ error: 'Authentication failed' });
+    return res.status(500).json({ 
+      error: 'Authentication system error', 
+      message: 'An unexpected error occurred. Please try again later.',
+      code: 'SYSTEM_ERROR'
+    });
   }
 }
 

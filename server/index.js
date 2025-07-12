@@ -53,9 +53,32 @@ connectDB().then(() => {
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Server error:', error);
+  
+  // Log detailed error information in development
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      path: req.path,
+      method: req.method,
+      body: req.body,
+      params: req.params,
+      query: req.query,
+      headers: req.headers
+    });
+  }
+  
+  // In production, log to a proper logging service
+  if (process.env.NODE_ENV === 'production') {
+    // This would be replaced with actual error logging service
+    // Example: logger.error('Server error', { error, request: { path: req.path, method: req.method } });
+  }
+  
+  // Send appropriate error response
   res.status(500).json({ 
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+    message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    errorId: Date.now().toString(36) // For tracking in logs
   });
 });
 
