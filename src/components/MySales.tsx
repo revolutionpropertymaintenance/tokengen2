@@ -211,6 +211,15 @@ export const MySales: React.FC = () => {
     });
   };
 
+  const getSaleStats = () => {
+    return {
+      totalSales: sales.length,
+      liveSales: sales.filter(sale => sale.status === 'live').length,
+      totalRaised: sales.reduce((sum, sale) => sum + parseFloat(sale.totalRaised || '0'), 0),
+      totalParticipants: sales.reduce((sum, sale) => sum + (sale.participantCount || 0), 0)
+    };
+  };
+
   const stats = getSaleStats();
 
   return (
