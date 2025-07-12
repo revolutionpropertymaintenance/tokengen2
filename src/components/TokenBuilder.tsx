@@ -1,5 +1,3 @@
-Here's the fixed version with all missing closing brackets and parentheses added:
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
