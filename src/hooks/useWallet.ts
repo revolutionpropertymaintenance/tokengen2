@@ -157,7 +157,11 @@ export const useWallet = () => {
           return true;
         } catch (addError: any) {
           console.error('Error adding chain to MetaMask:', addError);
-          setSwitchError(`Failed to add network: ${addError.message}`);
+          if (addError.code === 4001) {
+            setSwitchError('Network addition rejected: Please approve the request in MetaMask to add the network.');
+          } else {
+            setSwitchError(`Failed to add network: ${addError.message}`);
+          }
           return false;
         }
       } else {
