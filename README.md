@@ -1,6 +1,28 @@
 # TokenForge - Create and Deploy ERC-20 Tokens
 
-TokenForge is a comprehensive platform for creating and deploying professional-grade ERC-20/BEP-20 tokens across multiple blockchains. With an intuitive interface and advanced features, TokenForge makes token creation accessible to everyone, regardless of technical expertise.
+TokenForge is a comprehensive platform for creating and deploying professional-grade ERC-20/BEP-20 tokens across multiple blockchains using Hardhat. With an intuitive interface, secure backend deployment, and advanced features, TokenForge makes token creation accessible to everyone while maintaining enterprise-grade security and reliability.
+
+## 🚀 New Hardhat Integration
+
+TokenForge now uses **Hardhat** for all contract deployments, providing:
+- **Production-Grade Deployment**: Secure, tested deployment scripts
+- **Automatic Verification**: Contracts verified on blockchain explorers
+- **Multi-Network Support**: Seamless deployment across all supported networks
+- **Gas Optimization**: Optimized contracts with reduced deployment costs
+- **Deployment Tracking**: Complete deployment history and status monitoring
+- **Backend Security**: Secure API-based deployment with authentication
+
+### Architecture Overview
+
+```
+Frontend (React + TypeScript)
+    ↓ API Calls
+Backend (Node.js + Express)
+    ↓ Hardhat Scripts
+Blockchain Networks
+```
+
+The platform now operates with a secure backend service that handles all contract compilation and deployment using Hardhat, while the frontend provides the user interface and wallet integration.
 
 ## Theme Colors and CSS
 
@@ -587,8 +609,12 @@ The sale explorer page includes:
 
 ## Features
 
-- **No-Code Token Creation**: Create tokens with advanced features without writing a single line of code
+- **Hardhat-Powered Deployment**: Professional-grade contract deployment using industry-standard tools
+- **Secure Backend Architecture**: API-based deployment with JWT authentication
+- **Automatic Contract Verification**: All contracts verified on blockchain explorers
+- **No-Code Token Creation**: Create tokens with advanced features without writing code
 - **Multi-Chain Support**: Deploy on Ethereum, BSC, Polygon, Arbitrum, Fantom, Avalanche, and more
+- **Real-time Deployment Tracking**: Monitor deployment status and transaction confirmations
 - **Advanced Token Features**:
   - Burnable tokens
   - Mintable supply
@@ -596,10 +622,19 @@ The sale explorer page includes:
   - Holder redistribution
   - Token vesting & locking
 - **Presale & Private Sale**: Launch token sales with customizable parameters
+- **Deployment History**: Track all your deployed contracts and sales
 - **Mobile Responsive**: Fully responsive design works on all devices
-- **Self-Hosted**: No external APIs, fully client-side deployment
+- **Enterprise Security**: Secure wallet-based authentication and API protection
 
 ## Installation
+
+### Prerequisites
+
+- Node.js 16+ and npm
+- Git
+- A wallet with funds for deployment (MetaMask recommended)
+
+### Quick Start
 
 ```bash
 # Clone the repository
@@ -609,8 +644,54 @@ cd tokenforge
 # Install dependencies
 npm install
 
-# Start the development server
+# Copy environment configuration
+cp .env.example .env
+
+# Configure your .env file with:
+# - RPC URLs for networks you want to support
+# - API keys for contract verification
+# - JWT secret for authentication
+# - Other configuration options
+
+# Start both frontend and backend
+npm run dev:all
+```
+
+The application will be available at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3001
+
+### Manual Setup
+
+If you prefer to run frontend and backend separately:
+
+```bash
+# Terminal 1 - Backend
+npm run server
+
+# Terminal 2 - Frontend
 npm run dev
+```
+
+### Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Network RPC URLs (required)
+ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
+BSC_RPC_URL=https://bsc-dataseed.binance.org/
+POLYGON_RPC_URL=https://polygon-rpc.com/
+# ... add other networks as needed
+
+# API Keys for Contract Verification (required)
+ETHERSCAN_API_KEY=your_etherscan_api_key
+BSCSCAN_API_KEY=your_bscscan_api_key
+POLYGONSCAN_API_KEY=your_polygonscan_api_key
+
+# Server Configuration
+PORT=3001
+JWT_SECRET=your_secure_jwt_secret_key
 ```
 
 ## Usage
@@ -624,18 +705,20 @@ npm run dev
 ### 2. Create a Token
 
 1. Click "Start Building" on the home page
-2. Configure your token parameters:
+2. The system will authenticate your wallet using message signing
+3. Configure your token parameters:
    - Token name and symbol
    - Initial and max supply
    - Decimals
    - Select network
-3. Choose token features:
+4. Choose token features:
    - Burnable
    - Mintable
    - Transfer fees
    - Holder redistribution
-4. Configure vesting schedules (optional)
-5. Review and deploy
+5. Configure vesting schedules (optional)
+6. Review your configuration
+7. Deploy using Hardhat (requires gas fees + ESR tokens for mainnet)
 
 ### 3. Launch a Sale
 
@@ -651,40 +734,54 @@ npm run dev
 6. Configure wallet addresses
 7. Review and deploy
 
-## Deployment Methods
+## Deployment Architecture
 
-### Method 1: Direct Deployment (Default)
+### Hardhat-Based Deployment (Production)
 
-The platform uses Web3 to deploy contracts directly from your browser:
+TokenForge uses Hardhat for all contract deployments, providing enterprise-grade reliability:
 
 1. Connect your wallet
-2. Configure token parameters
-3. Click "Deploy Token"
-4. Confirm the transaction in your wallet
-5. Wait for deployment and verification
+2. Authenticate using wallet message signing
+3. Configure token parameters in the frontend
+4. Submit deployment request to secure API
+5. Backend compiles contract using Hardhat
+6. Contract deployed to selected network
+7. Automatic verification on blockchain explorer
+8. Deployment details saved and tracked
 
-### Method 2: Remix IDE (Fallback)
+### Deployment Process Flow
 
-If direct deployment fails, you can use Remix IDE:
+```
+User Input → Frontend Validation → API Authentication → Hardhat Compilation → Network Deployment → Verification → Success Response
+```
 
-1. Click "Deploy with Remix" on the error screen
-2. Open [Remix IDE](https://remix.ethereum.org)
-3. Create a new file with the contract code provided
-4. Compile the contract (Solidity 0.8.19+)
-5. Deploy with the constructor parameters shown
-6. Verify the contract on the blockchain explorer
+### Security Features
 
-#### Remix Deployment Steps
+- **Wallet Authentication**: Secure message signing for user verification
+- **API Protection**: JWT-based authentication for all API endpoints
+- **Input Validation**: Comprehensive validation of all user inputs
+- **Secure Compilation**: Server-side contract compilation using Hardhat
+- **Automatic Verification**: All contracts verified on blockchain explorers
+- **Deployment Tracking**: Complete audit trail of all deployments
 
-1. **Open Remix IDE**: Go to [remix.ethereum.org](https://remix.ethereum.org)
-2. **Create Contract File**: Create a new file (e.g., `MyToken.sol`)
-3. **Copy Contract Code**: Copy the contract code from the TokenForge interface
-4. **Compile Contract**: Select Solidity compiler 0.8.19+ and compile
-5. **Deploy Contract**: 
-   - Select "Injected Web3" environment
-   - Enter constructor parameters in the correct order
-   - Click "Deploy" and confirm in your wallet
-6. **Verify Contract**: Use the blockchain explorer's verification tool
+### Supported Networks
+
+All deployments are handled through Hardhat with the following networks configured:
+
+#### Mainnets
+- Ethereum (ETH) - Chain ID: 1
+- Binance Smart Chain (BNB) - Chain ID: 56
+- Polygon (MATIC) - Chain ID: 137
+- Arbitrum (ETH) - Chain ID: 42161
+- Fantom (FTM) - Chain ID: 250
+- Avalanche (AVAX) - Chain ID: 43114
+
+#### Testnets
+- Estar Testnet (ESR) - Chain ID: 25062019
+- Ethereum Goerli (ETH) - Chain ID: 5
+- BSC Testnet (tBNB) - Chain ID: 97
+- Polygon Mumbai (MATIC) - Chain ID: 80001
+- Arbitrum Sepolia (ETH) - Chain ID: 421614
 
 ## ESR Token Requirements
 
@@ -692,22 +789,174 @@ If direct deployment fails, you can use Remix IDE:
 - Testnet deployments are free
 - ESR tokens are used for platform fees and are burned during deployment
 
-## Supported Networks
+## API Documentation
 
-### Mainnets
-- Ethereum (ETH)
-- Binance Smart Chain (BNB)
-- Polygon (MATIC)
-- Arbitrum (ETH)
-- Fantom (FTM)
-- Avalanche (AVAX)
+### Authentication Endpoints
 
-### Testnets
-- Estar Testnet (ESR)
-- Ethereum Goerli (ETH)
-- BSC Testnet (tBNB)
-- Polygon Mumbai (MATIC)
-- Arbitrum Sepolia (ETH)
+#### POST /api/auth/message
+Get authentication message for wallet signing.
+
+**Request:**
+```json
+{
+  "address": "0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Welcome to TokenForge!\n\nSign this message to authenticate...",
+  "timestamp": 1640995200000
+}
+```
+
+#### POST /api/auth/login
+Authenticate user with signed message.
+
+**Request:**
+```json
+{
+  "address": "0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C",
+  "signature": "0x...",
+  "message": "Welcome to TokenForge!..."
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "address": "0x742d35cc6634c0532925a3b8d4c9db96590c6c8c",
+  "expiresIn": "24h"
+}
+```
+
+### Deployment Endpoints
+
+#### POST /api/deploy/token
+Deploy a token contract using Hardhat.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "contractType": "BasicToken",
+  "constructorArgs": ["My Token", "MTK", 18, "1000000", "0", "0x..."],
+  "network": "ethereum",
+  "verify": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "contractAddress": "0x...",
+  "transactionHash": "0x...",
+  "gasUsed": "2500000",
+  "deploymentCost": "0.025",
+  "network": "ethereum",
+  "verified": true,
+  "timestamp": "2024-01-15T10:30:00.000Z"
+}
+```
+
+#### POST /api/deploy/presale
+Deploy a presale contract using Hardhat.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+Content-Type: application/json
+```
+
+**Request:**
+```json
+{
+  "presaleConfig": {
+    "tokenInfo": { ... },
+    "saleConfiguration": { ... },
+    "vestingConfig": { ... },
+    "walletSetup": { ... }
+  },
+  "network": "ethereum",
+  "verify": true
+}
+```
+
+### Contract Management Endpoints
+
+#### GET /api/contracts/deployed
+Get user's deployed contracts.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response:**
+```json
+{
+  "tokens": [...],
+  "presales": [...]
+}
+```
+
+## Development
+
+### Project Structure
+
+```
+/
+├── contracts/           # Solidity contract templates
+├── scripts/             # Hardhat deployment scripts
+├── server/              # Backend API service
+│   ├── api/             # API route handlers
+│   ├── middleware/      # Authentication & validation
+│   └── index.js         # Server entry point
+├── src/                 # Frontend React application
+├── hardhat.config.js    # Hardhat configuration
+└── package.json         # Dependencies and scripts
+```
+
+### Available Scripts
+
+```bash
+# Development
+npm run dev              # Start frontend only
+npm run server           # Start backend only
+npm run dev:all          # Start both frontend and backend
+
+# Hardhat
+npm run compile          # Compile contracts
+npm run test             # Run contract tests
+npm run deploy:local     # Deploy to local network
+
+# Production
+npm run build            # Build frontend for production
+npm run start            # Start production server
+```
+
+### Adding New Networks
+
+1. Add network configuration to `hardhat.config.js`
+2. Add RPC URL to `.env` file
+3. Add network to `src/data/networks.ts`
+4. Add API key for verification (if needed)
+
+### Adding New Contract Types
+
+1. Create contract in `contracts/` directory
+2. Add contract type to validation middleware
+3. Update frontend contract type selection
+4. Test deployment on testnet
 
 ## Troubleshooting
 
@@ -715,27 +964,36 @@ If direct deployment fails, you can use Remix IDE:
 
 1. **Transaction Failing**: 
    - Ensure you have enough native tokens for gas
-   - Check that you have approved ESR token spending
+   - Verify your wallet is connected to the correct network
+   - Check that you have sufficient ESR tokens for mainnet deployment
    - Try increasing gas limit
 
-2. **Contract Verification Failed**:
-   - Use the manual verification option
-   - Ensure compiler version matches (0.8.19+)
-   - Check that constructor arguments are correct
+2. **Authentication Issues**:
+   - Ensure your wallet is unlocked
+   - Try refreshing the page and reconnecting
+   - Check that you're signing the correct message
 
-3. **Wallet Connection Issues**:
+3. **Deployment Failures**:
+   - Check network status and gas prices
+   - Verify RPC endpoint is working
+   - Ensure backend service is running
+   - Check server logs for detailed error messages
+
+4. **API Connection Issues**:
+   - Verify backend is running on port 3001
+   - Check CORS configuration
+   - Ensure JWT token is valid
+
+5. **Contract Verification Failed**:
+   - Check API keys are configured correctly
+   - Verify network supports verification
+   - Ensure contract source matches deployed bytecode
+
+6. **General Issues**:
    - Refresh the page
    - Clear browser cache
    - Try a different browser
-
-### Using Remix IDE
-
-If automatic deployment fails:
-
-1. Copy the contract code provided
-2. Follow the Remix deployment steps above
-3. Use the exact constructor parameters shown
-4. Deploy with the same wallet address
+   - Check browser console for error messages
 
 ## License
 
