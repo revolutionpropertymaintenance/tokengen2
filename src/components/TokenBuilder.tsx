@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
-import { networks } from '../data/networks';
+import { networks, mainnets, testnets } from '../data/networks';
 import { contractService } from '../services/contractService';
 import { useNetworkMode } from '../hooks/useNetworkMode';
 
@@ -140,6 +140,9 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
     }));
   };
 
+  // Filter networks based on current mode
+  const filteredNetworks = isTestnetMode ? testnets : mainnets;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
       <div className="max-w-4xl mx-auto">
@@ -240,8 +243,8 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10">
             <h2 className="text-xl font-semibold text-white mb-6">Network Selection</h2>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {networks.map((network) => (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              {filteredNetworks.map((network) => (
                 <div
                   key={network.id}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
@@ -259,6 +262,22 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                 </div>
               ))}
               {gasEstimate && (
+            
+            {/* Network Mode Indicator */}
+            <div className={`p-3 rounded-lg ${
+              isTestnetMode 
+                ? 'bg-amber-500/20 border border-amber-500/50' 
+                : 'bg-blue-500/20 border border-blue-500/50'
+            }`}>
+              <div className="flex items-center space-x-2">
+                <span className={isTestnetMode ? 'text-amber-400' : 'text-blue-400'}>
+                  {isTestnetMode ? '⚠️ Testnet Mode Active' : '🔵 Mainnet Mode Active'}
+                </span>
+                <span className="text-sm text-gray-300">
+                  (Toggle in header to change)
+                </span>
+              </div>
+            </div>
                 <div className="md:col-span-2 lg:col-span-3 mt-4 p-3 bg-blue-500/20 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <Zap className="w-4 h-4 text-blue-400" />
