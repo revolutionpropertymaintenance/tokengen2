@@ -168,10 +168,10 @@ export const useWallet = () => {
         const balance = await provider.getBalance(wallet.address);
         const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
         
-        setWallet({
+        setWallet(prev => ({
           ...prev,
           balance: formattedBalance
-        });
+        }));
       } catch (error) {
         console.error('Error updating balance:', error);
       }

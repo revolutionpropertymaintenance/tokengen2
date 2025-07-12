@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
 import { networks } from '../data/networks';
