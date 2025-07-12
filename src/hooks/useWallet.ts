@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { web3Service } from '../services/web3Service';
+import { ethers } from 'ethers';
+import { contractService } from '../services/contractService';
 
 interface WalletState {
   isConnected: boolean;
@@ -22,20 +23,34 @@ export const useWallet = () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         setIsConnecting(true);
-        // Connect using web3Service
-        const address = await web3Service.connect();
+        
+        // Request account access
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send('eth_requestAccounts', []);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
         
         // Get network info
-        const network = web3Service.getNetworkInfo();
+        const network = await provider.getNetwork();
         
         // Get balance
-        const balance = await web3Service.getBalance(address);
+        const balance = await provider.getBalance(address);
+        
+        // Authenticate with backend
+        try {
+          const message = await contractService.getAuthMessage(address);
+          const signature = await signer.signMessage(message);
+          await contractService.authenticate(address, signature, message);
+        } catch (authError) {
+          console.error('Authentication failed:', authError);
+          // Continue without authentication for now
+        }
         
         setWallet({
           isConnected: true,
           address: address,
-          balance: parseFloat(balance).toFixed(4),
-          chainId: network?.chainId || 0
+          balance: parseFloat(ethers.formatEther(balance)).toFixed(4),
+          chainId: Number(network.chainId)
         });
       } catch (error) {
         console.error('Error connecting wallet:', error);
@@ -48,8 +63,9 @@ export const useWallet = () => {
   };
 
   const disconnectWallet = () => {
-    // Disconnect web3Service
-    web3Service.disconnect();
+    // Clear auth token
+    localStorage.removeItem('authToken');
+    
     setWallet({
       isConnected: false,
       address: null,
@@ -62,7 +78,6 @@ export const useWallet = () => {
     if (typeof window.ethereum !== 'undefined') {
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
-          web3Service.disconnect();
           disconnectWallet();
         } else {
           setWallet(prev => {
