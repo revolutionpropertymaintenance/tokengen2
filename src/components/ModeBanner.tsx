@@ -15,20 +15,10 @@ export const ModeBanner: React.FC = () => {
     }
   }, [showBanner, setShowBanner]);
 
-  if (!isTestnetMode && !showBanner) return null;
+  if (!showBanner) return null;
 
   return (
     <>
-      {/* Persistent Testnet Banner */}
-      {isTestnetMode && (
-        <div className="bg-amber-500 text-amber-900 px-4 py-2 text-center font-medium">
-          <div className="flex items-center justify-center space-x-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span>⚠️ TESTNET MODE ENABLED — Not Real Tokens</span>
-          </div>
-        </div>
-      )}
-
       {/* Notification Banner */}
       {showBanner && (
         <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg ${

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Wallet, LogOut, Loader2, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
-import { NetworkModeToggle } from './NetworkModeToggle';
 import { ChainStatus } from './ChainStatus';
 import { useNetworkMode } from '../hooks/useNetworkMode';
 import { getMainnetChainIds, getTestnetChainIds } from '../config/chainConfig';
@@ -50,7 +49,6 @@ export const WalletConnection: React.FC = () => {
       <div className="flex items-center space-x-4 flex-wrap">
         <div className="flex items-center space-x-4">
           <ChainStatus />
-          <NetworkModeToggle />
           <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
             <div className="flex items-center space-x-2">
               <Wallet className="w-4 h-4 text-blue-300" />
@@ -109,7 +107,6 @@ export const WalletConnection: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-4">
-      <NetworkModeToggle />
       <ChainStatus />
       <button
         onClick={connectWallet}

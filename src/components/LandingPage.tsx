@@ -3,7 +3,6 @@ import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star } from 'lucide-react'
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
 import { ChainStatus } from './ChainStatus';
-import { useNetworkMode } from '../hooks/useNetworkMode';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -21,7 +20,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onExploreSales
 }) => {
   const { isConnected } = useWallet();
-  const { isTestnetMode } = useNetworkMode();
   
   const features = [
     {
@@ -70,9 +68,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">TokenForge</h1>
-              {isTestnetMode && (
-                <span className="text-xs font-medium text-amber-400">TESTNET MODE</span>
-              )}
             </div>
           </div>
           <div className="flex items-center space-x-4">
