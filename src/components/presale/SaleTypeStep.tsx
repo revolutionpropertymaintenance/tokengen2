@@ -90,7 +90,7 @@ export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBa
                   <div key={index} className="flex items-center space-x-2">
                     <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
                     <span className="text-gray-300 text-sm">{feature}</span>
-                  {isTestnetMode ? 'Free (Testnet)' : '100 ESR + Gas'}
+                  </div>
                 ))}
               </div>
             </div>
@@ -134,8 +134,8 @@ export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBa
               </tr>
               <tr>
                 <td className="py-3 text-gray-300">ESR Cost</td>
-                <td className="text-center py-3 text-white">100 ESR</td>
-                <td className="text-center py-3 text-white">100 ESR</td>
+                <td className="text-center py-3 text-white">{isTestnetMode ? 'Free (Testnet)' : '100 ESR + Gas'}</td>
+                <td className="text-center py-3 text-white">{isTestnetMode ? 'Free (Testnet)' : '100 ESR + Gas'}</td>
               </tr>
             </tbody>
           </table>
