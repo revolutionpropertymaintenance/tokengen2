@@ -2,8 +2,11 @@ const express = require('express');
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { ethers } = require('ethers');
 const { authenticate } = require('../middleware/auth');
 const { validateTokenConfig, validatePresaleConfig } = require('../middleware/validation');
+const { query } = require('../db');
+const { encrypt, decrypt } = require('../utils/encryption');
 
 const router = express.Router();
 
@@ -36,13 +39,40 @@ router.post('/token', authenticate, validateTokenConfig, async (req, res) => {
       return res.status(400).json({ error: `Unsupported network: ${network}` });
     }
     
+    // Check if user has enough ESR tokens for mainnet deployment
+    if (!network.includes('testnet') && !network.includes('goerli') && !network.includes('sepolia')) {
+      try {
+        const userResult = await query(
+          'SELECT esr_balance FROM users WHERE address = $1',
+          [userId]
+        );
+        
+        if (userResult.rows.length === 0) {
+          return res.status(400).json({ error: 'User not found' });
+        }
+        
+        const esrBalance = parseFloat(userResult.rows[0].esr_balance || '0');
+        const requiredBalance = 100; // 100 ESR tokens required
+        
+        if (esrBalance < requiredBalance) {
+          return res.status(400).json({ 
+            error: `Insufficient ESR tokens. Required: ${requiredBalance}, Available: ${esrBalance.toFixed(2)}` 
+          });
+        }
+      } catch (balanceError) {
+        console.error('Error checking ESR balance:', balanceError);
+        // Continue with deployment even if balance check fails
+      }
+    }
+    
     // Set environment variables for the deployment script
     const env = {
       ...process.env,
       CONTRACT_TYPE: contractType,
       CONSTRUCTOR_ARGS: JSON.stringify(constructorArgs),
       USE_FACTORY: useFactory ? "true" : "false",
-      VERIFY: verify ? "true" : "false"
+      VERIFY: verify ? "true" : "false",
+      DEPLOYER_ADDRESS: userId
     };
     
     // Run Hardhat deployment script
@@ -51,7 +81,7 @@ router.post('/token', authenticate, validateTokenConfig, async (req, res) => {
     
     console.log(`Executing: ${command}`);
     
-    exec(command, { env, cwd: path.join(__dirname, '..', '..') }, (error, stdout, stderr) => {
+    exec(command, { env, cwd: path.join(__dirname, '..', '..') }, async (error, stdout, stderr) => {
       if (error) {
         console.error(`Deployment error: ${error}`);
         console.error(`stderr: ${stderr}`);
@@ -78,6 +108,54 @@ router.post('/token', authenticate, validateTokenConfig, async (req, res) => {
             error: 'Deployment failed', 
             details: result.error 
           });
+        }
+        
+        // Save deployment to database
+        try {
+          await query(
+            `INSERT INTO tokens 
+            (contract_address, contract_type, name, symbol, decimals, initial_supply, max_supply, 
+             owner_address, network_id, network_name, network_chain_id, transaction_hash, verified, features) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+            [
+              result.contractAddress.toLowerCase(),
+              contractType,
+              constructorArgs[0], // name
+              constructorArgs[1], // symbol
+              constructorArgs[2], // decimals
+              constructorArgs[3], // initialSupply
+              constructorArgs[4], // maxSupply
+              userId,
+              network,
+              network, // This would be the network name in a real implementation
+              getChainId(network), // This would be the chain ID in a real implementation
+              result.transactionHash,
+              result.verified || false,
+              JSON.stringify({
+                burnable: contractType.includes('Burnable'),
+                mintable: contractType.includes('Mintable'),
+                transferFees: contractType.includes('Fee') ? {
+                  enabled: true,
+                  percentage: constructorArgs[5] / 100, // Convert from basis points
+                  recipient: constructorArgs[6]
+                } : {
+                  enabled: false,
+                  percentage: 0,
+                  recipient: ''
+                },
+                holderRedistribution: contractType.includes('Redistribution') ? {
+                  enabled: true,
+                  percentage: contractType.includes('Advanced') ? constructorArgs[7] / 100 : constructorArgs[5] / 100
+                } : {
+                  enabled: false,
+                  percentage: 0
+                }
+              })
+            ]
+          );
+        } catch (dbError) {
+          console.error('Error saving deployment to database:', dbError);
+          // Continue even if database save fails
         }
         
         // Return deployment details
@@ -108,6 +186,25 @@ router.post('/token', authenticate, validateTokenConfig, async (req, res) => {
   }
 });
 
+// Get chain ID for network
+function getChainId(network) {
+  const chainIds = {
+    'ethereum': 1,
+    'bsc': 56,
+    'polygon': 137,
+    'arbitrum': 42161,
+    'fantom': 250,
+    'avalanche': 43114,
+    'goerli': 5,
+    'bsc-testnet': 97,
+    'mumbai': 80001,
+    'arbitrum-sepolia': 421614,
+    'estar-testnet': 25062019
+  };
+  
+  return chainIds[network] || 1;
+}
+
 // Deploy presale contract
 router.post('/presale', authenticate, validatePresaleConfig, async (req, res) => {
   try {
@@ -122,11 +219,38 @@ router.post('/presale', authenticate, validatePresaleConfig, async (req, res) =>
       return res.status(400).json({ error: `Unsupported network: ${network}` });
     }
     
+    // Check if user has enough ESR tokens for mainnet deployment
+    if (!network.includes('testnet') && !network.includes('goerli') && !network.includes('sepolia')) {
+      try {
+        const userResult = await query(
+          'SELECT esr_balance FROM users WHERE address = $1',
+          [userId]
+        );
+        
+        if (userResult.rows.length === 0) {
+          return res.status(400).json({ error: 'User not found' });
+        }
+        
+        const esrBalance = parseFloat(userResult.rows[0].esr_balance || '0');
+        const requiredBalance = 100; // 100 ESR tokens required
+        
+        if (esrBalance < requiredBalance) {
+          return res.status(400).json({ 
+            error: `Insufficient ESR tokens. Required: ${requiredBalance}, Available: ${esrBalance.toFixed(2)}` 
+          });
+        }
+      } catch (balanceError) {
+        console.error('Error checking ESR balance:', balanceError);
+        // Continue with deployment even if balance check fails
+      }
+    }
+    
     // Set environment variables for the deployment script
     const env = {
       ...process.env,
       PRESALE_CONFIG: JSON.stringify(presaleConfig),
-      VERIFY: verify ? "true" : "false"
+      VERIFY: verify ? "true" : "false",
+      DEPLOYER_ADDRESS: userId
     };
     
     // Run Hardhat deployment script
@@ -135,7 +259,7 @@ router.post('/presale', authenticate, validatePresaleConfig, async (req, res) =>
     
     console.log(`Executing: ${command}`);
     
-    exec(command, { env, cwd: path.join(__dirname, '..', '..') }, (error, stdout, stderr) => {
+    exec(command, { env, cwd: path.join(__dirname, '..', '..') }, async (error, stdout, stderr) => {
       if (error) {
         console.error(`Presale deployment error: ${error}`);
         console.error(`stderr: ${stderr}`);
@@ -162,6 +286,35 @@ router.post('/presale', authenticate, validatePresaleConfig, async (req, res) =>
             error: 'Presale deployment failed', 
             details: result.error 
           });
+        }
+        
+        // Save deployment to database
+        try {
+          await query(
+            `INSERT INTO presales 
+            (contract_address, token_address, owner_address, sale_type, token_info, 
+             sale_configuration, vesting_config, wallet_setup, network_id, network_name, 
+             network_chain_id, transaction_hash, verified) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+            [
+              result.contractAddress.toLowerCase(),
+              presaleConfig.tokenInfo.tokenAddress.toLowerCase(),
+              userId,
+              presaleConfig.saleType,
+              JSON.stringify(presaleConfig.tokenInfo),
+              JSON.stringify(presaleConfig.saleConfiguration),
+              JSON.stringify(presaleConfig.vestingConfig),
+              JSON.stringify(presaleConfig.walletSetup),
+              network,
+              network, // This would be the network name in a real implementation
+              getChainId(network),
+              result.transactionHash,
+              result.verified || false
+            ]
+          );
+        } catch (dbError) {
+          console.error('Error saving presale to database:', dbError);
+          // Continue even if database save fails
         }
         
         // Return deployment details
@@ -227,6 +380,22 @@ router.get('/status/:txHash', authenticate, async (req, res) => {
         });
       }
       
+      // Update transaction status in database
+      try {
+        await query(
+          'UPDATE transactions SET status = $1, gas_used = $2, block_number = $3 WHERE transaction_hash = $4',
+          [
+            receipt.status === 1 ? 'confirmed' : 'failed',
+            receipt.gasUsed.toString(),
+            receipt.blockNumber,
+            txHash
+          ]
+        );
+      } catch (dbError) {
+        console.error('Error updating transaction status in database:', dbError);
+        // Continue even if database update fails
+      }
+      
       res.json({
         transactionHash: txHash,
         status: receipt.status === 1 ? 'confirmed' : 'failed',
@@ -236,7 +405,7 @@ router.get('/status/:txHash', authenticate, async (req, res) => {
       });
     } catch (txError) {
       console.error('Error checking transaction status:', txError);
-      res.status(500).json({ error: 'Failed to check transaction status' });
+      res.status(500).json({ error: 'Failed to check transaction status', details: txError.message });
     }
     
   } catch (error) {
@@ -273,7 +442,7 @@ router.post('/estimate', authenticate, validateTokenConfig, async (req, res) => 
       contractSource = fs.readFileSync(contractSourcePath, 'utf8');
     } catch (readError) {
       console.error(`Error reading contract source: ${readError}`);
-      return res.status(500).json({ error: 'Failed to read contract source' });
+      return res.status(500).json({ error: 'Failed to read contract source', details: readError.message });
     }
     
     // Compile contract

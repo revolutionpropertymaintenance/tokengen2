@@ -1,11 +1,12 @@
 import { ethers } from 'ethers';
 import { Network } from '../types';
-import { AppError, ErrorType } from './errorHandler';
+import { AppError, ErrorType, reportError } from './errorHandler';
 
 export class Web3Service {
   private provider: ethers.BrowserProvider | null = null;
   private signer: ethers.JsonRpcSigner | null = null;
   private network: Network | null = null;
+  private providerListeners: { [key: string]: (...args: any[]) => void } = {};
 
   async connect(): Promise<string> {
     if (typeof window.ethereum === 'undefined') {
@@ -13,7 +14,13 @@ export class Web3Service {
     }
 
     try {
-      this.provider = new ethers.BrowserProvider(window.ethereum);
+      // Remove any existing listeners
+      this.removeAllListeners();
+      
+      // Create provider
+      this.provider = new ethers.BrowserProvider(window.ethereum, 'any');
+      
+      // Request accounts
       await this.provider.send('eth_requestAccounts', []);
       this.signer = await this.provider.getSigner();
       
@@ -29,15 +36,108 @@ export class Web3Service {
         gasPrice: await this.getGasPrice()
       };
       
+      // Setup event listeners
+      this.setupEventListeners();
+      
       return await this.signer.getAddress();
     } catch (error) {
       console.error('Error connecting to wallet:', error);
+      
+      // Clean up on error
+      this.removeAllListeners();
+      this.provider = null;
+      this.signer = null;
+      this.network = null;
+      
       throw new AppError(
         (error as Error).message || 'Failed to connect to wallet',
         ErrorType.WALLET,
         error
       );
     }
+  }
+  
+  private setupEventListeners() {
+    if (!window.ethereum) return;
+    
+    // Account changed
+    this.providerListeners.accountsChanged = (accounts: string[]) => {
+      if (accounts.length === 0) {
+        console.log('Wallet disconnected');
+        this.disconnect();
+      } else {
+        console.log('Account changed:', accounts[0]);
+        // Refresh signer
+        if (this.provider) {
+          this.provider.getSigner().then(signer => {
+            this.signer = signer;
+          }).catch(error => {
+            console.error('Error updating signer:', error);
+          });
+        }
+      }
+    };
+    
+    // Chain changed
+    this.providerListeners.chainChanged = (chainIdHex: string) => {
+      const chainId = parseInt(chainIdHex, 16);
+      console.log('Chain changed to:', chainId);
+      
+      // Update network info
+      if (this.provider) {
+        this.provider.getNetwork().then(network => {
+          this.network = {
+            id: network.name,
+            name: this.getNetworkName(chainId),
+            symbol: this.getNetworkSymbol(chainId),
+            chainId: chainId,
+            rpcUrl: window.ethereum.rpcUrls?.[0] || '',
+            explorerUrl: this.getExplorerUrl(chainId),
+            gasPrice: '0.0' // Will be updated
+          };
+          
+          // Update gas price
+          this.getGasPrice().then(gasPrice => {
+            if (this.network) {
+              this.network.gasPrice = gasPrice;
+            }
+          });
+        }).catch(error => {
+          console.error('Error updating network:', error);
+        });
+      }
+    };
+    
+    // Disconnect
+    this.providerListeners.disconnect = (error: { code: number; message: string }) => {
+      console.log('Wallet disconnected:', error);
+      this.disconnect();
+    };
+    
+    // Add listeners
+    window.ethereum.on('accountsChanged', this.providerListeners.accountsChanged);
+    window.ethereum.on('chainChanged', this.providerListeners.chainChanged);
+    window.ethereum.on('disconnect', this.providerListeners.disconnect);
+  }
+  
+  private removeAllListeners() {
+    if (!window.ethereum) return;
+    
+    // Remove all listeners
+    if (this.providerListeners.accountsChanged) {
+      window.ethereum.removeListener('accountsChanged', this.providerListeners.accountsChanged);
+    }
+    
+    if (this.providerListeners.chainChanged) {
+      window.ethereum.removeListener('chainChanged', this.providerListeners.chainChanged);
+    }
+    
+    if (this.providerListeners.disconnect) {
+      window.ethereum.removeListener('disconnect', this.providerListeners.disconnect);
+    }
+    
+    // Clear listeners
+    this.providerListeners = {};
   }
 
   async getBalance(address: string): Promise<string> {
@@ -95,23 +195,27 @@ export class Web3Service {
   }
 
   private async addNetwork(network: Network): Promise<void> {
-    await window.ethereum.request({
-      method: 'wallet_addEthereumChain',
-      params: [{
-        chainId: `0x${network.chainId.toString(16)}`,
-        chainName: network.name,
-        nativeCurrency: {
-          name: network.symbol,
-          symbol: network.symbol,
-          decimals: 18,
-        },
-        rpcUrls: [network.rpcUrl],
-        blockExplorerUrls: [network.explorerUrl],
-      }],
-    });
-    
-    // Update current network
-    this.network = network;
+    try {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: `0x${network.chainId.toString(16)}`,
+          chainName: network.name,
+          nativeCurrency: {
+            name: network.symbol,
+            symbol: network.symbol,
+            decimals: 18,
+          },
+          rpcUrls: [network.rpcUrl],
+          blockExplorerUrls: [network.explorerUrl],
+        }],
+      });
+      
+      // Update current network
+      this.network = network;
+    } catch (error) {
+      throw new AppError(`Failed to add ${network.name} network`, ErrorType.WALLET, error);
+    }
   }
 
   async getCurrentNetwork(): Promise<Network | null> {
@@ -128,12 +232,13 @@ export class Web3Service {
         name: this.getNetworkName(chainId),
         symbol: this.getNetworkSymbol(chainId),
         chainId: chainId,
-        rpcUrl: window.ethereum.rpcUrls?.[0] || '',
+        rpcUrl: window.ethereum?.rpcUrls?.[0] || '',
         explorerUrl: this.getExplorerUrl(chainId),
         gasPrice: await this.getGasPrice()
       };
     } catch (error) {
       console.error('Error getting current network:', error);
+      reportError(new AppError('Failed to get network information', ErrorType.NETWORK, error));
       return null;
     }
   }
@@ -195,15 +300,20 @@ export class Web3Service {
   async estimateGas(transaction: any): Promise<string> {
     if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
     
-    const gasEstimate = await this.provider.estimateGas(transaction);
-    const gasPrice = await this.provider.getFeeData();
-    
-    // Use maxFeePerGas if available (EIP-1559), otherwise use gasPrice
-    const effectiveGasPrice = gasPrice.maxFeePerGas || gasPrice.gasPrice || 0n;
-    
-    // Calculate total cost
-    const totalCost = gasEstimate * effectiveGasPrice;
-    return ethers.formatEther(totalCost);
+    try {
+      const gasEstimate = await this.provider.estimateGas(transaction);
+      const gasPrice = await this.provider.getFeeData();
+      
+      // Use maxFeePerGas if available (EIP-1559), otherwise use gasPrice
+      const effectiveGasPrice = gasPrice.maxFeePerGas || gasPrice.gasPrice || 0n;
+      
+      // Calculate total cost
+      const totalCost = gasEstimate * effectiveGasPrice;
+      return ethers.formatEther(totalCost);
+    } catch (error) {
+      console.error('Error estimating gas:', error);
+      throw new AppError('Failed to estimate gas', ErrorType.CONTRACT, error);
+    }
   }
   
   async estimateTokenDeploymentGas(contractType: string, constructorArgs: any[]): Promise<{
@@ -212,8 +322,8 @@ export class Web3Service {
     gasCostUsd: string;
     timeEstimate: string;
   }> {
-    if (!this.provider) throw new Error('Provider not connected');
-    if (!this.network) throw new Error('Network not detected');
+    if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
+    if (!this.network) throw new AppError('Network not detected', ErrorType.NETWORK);
     
     try {
       // Get contract bytecode and ABI
@@ -248,7 +358,7 @@ export class Web3Service {
       if (output.errors) {
         const errors = output.errors.filter((error: any) => error.severity === 'error');
         if (errors.length > 0) {
-          throw new Error(`Compilation errors: ${errors.map((e: any) => e.message).join(', ')}`);
+          throw new AppError(`Compilation errors: ${errors.map((e: any) => e.message).join(', ')}`, ErrorType.CONTRACT);
         }
       }
       
@@ -289,6 +399,8 @@ export class Web3Service {
       };
     } catch (error) {
       console.error('Error estimating gas:', error);
+      reportError(new AppError('Failed to estimate deployment gas', ErrorType.CONTRACT, error));
+      
       // Return fallback estimates
       return {
         gasEstimate: 0n,
@@ -337,10 +449,24 @@ export class Web3Service {
     
     try {
       const tx = await this.signer.sendTransaction(transaction);
+      
+      // Log transaction for debugging
+      console.log(`Transaction sent: ${tx.hash}`);
+      console.log(`Gas limit: ${tx.gasLimit.toString()}`);
+      console.log(`Gas price: ${tx.gasPrice?.toString() || 'unknown'}`);
+      
       return tx.hash;
     } catch (error) {
       console.error('Error sending transaction:', error);
-      throw new AppError('Transaction failed', ErrorType.CONTRACT, error);
+      
+      // Handle specific error cases
+      if ((error as any).code === 'ACTION_REJECTED') {
+        throw new AppError('Transaction rejected by user', ErrorType.WALLET, error);
+      } else if ((error as any).code === 'INSUFFICIENT_FUNDS') {
+        throw new AppError('Insufficient funds for transaction', ErrorType.WALLET, error);
+      } else {
+        throw new AppError('Transaction failed', ErrorType.CONTRACT, error);
+      }
     }
   }
 
@@ -348,8 +474,13 @@ export class Web3Service {
     if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
     
     try {
+      console.log(`Waiting for transaction ${txHash} to be mined...`);
       const receipt = await this.provider.waitForTransaction(txHash);
+      
       if (!receipt) throw new AppError('Transaction failed', ErrorType.CONTRACT);
+      
+      console.log(`Transaction confirmed in block ${receipt.blockNumber}`);
+      console.log(`Gas used: ${receipt.gasUsed.toString()}`);
       
       return receipt;
     } catch (error) {
@@ -363,15 +494,17 @@ export class Web3Service {
     
     try {
       const feeData = await this.provider.getFeeData();
-      const gasPrice = feeData.gasPrice || 0n;
+      
+      // Use maxFeePerGas if available (EIP-1559), otherwise use gasPrice
+      const gasPrice = feeData.maxFeePerGas || feeData.gasPrice || 0n;
       
       // Format gas price to human-readable format
-      const gasPriceInEth = ethers.formatEther(gasPrice);
       const gasPriceInGwei = ethers.formatUnits(gasPrice, 'gwei');
       
-      return `${gasPriceInGwei} Gwei (${gasPriceInEth} ETH)`;
+      return `${gasPriceInGwei} Gwei`;
     } catch (error) {
       console.error('Error getting gas price:', error);
+      reportError(new AppError('Failed to get gas price', ErrorType.NETWORK, error));
       return '0.0';
     }
   }
@@ -386,52 +519,6 @@ export class Web3Service {
 
   getNetworkInfo(): Network | null {
     return this.network;
-  }
-
-  async compileContract(source: string, contractName: string): Promise<{abi: any, bytecode: string}> {
-    try {
-      // Use solc.js to compile the contract
-      const solc = require('solc');
-      
-      const input = {
-        language: 'Solidity',
-        sources: {
-          'contract.sol': {
-            content: source
-          }
-        },
-        settings: {
-          outputSelection: {
-            '*': {
-              '*': ['abi', 'evm.bytecode']
-            }
-          },
-          optimizer: {
-            enabled: true,
-            runs: 200
-          }
-        }
-      };
-      
-      const output = JSON.parse(solc.compile(JSON.stringify(input)));
-      
-      if (output.errors) {
-        const errors = output.errors.filter((error: any) => error.severity === 'error');
-        if (errors.length > 0) {
-          throw new Error(`Compilation errors: ${errors.map((e: any) => e.message).join(', ')}`);
-        }
-      }
-      
-      const contract = output.contracts['contract.sol'][contractName];
-      
-      return {
-        abi: contract.abi,
-        bytecode: contract.evm.bytecode.object
-      };
-    } catch (error) {
-      console.error('Error compiling contract:', error);
-      throw error;
-    }
   }
 
   async deployContract(abi: any, bytecode: string, args: any[]): Promise<{address: string, txHash: string}> {
@@ -456,7 +543,15 @@ export class Web3Service {
       };
     } catch (error) {
       console.error('Error deploying contract:', error);
-      throw new AppError('Contract deployment failed', ErrorType.CONTRACT, error);
+      
+      // Handle specific error cases
+      if ((error as any).code === 'ACTION_REJECTED') {
+        throw new AppError('Deployment rejected by user', ErrorType.WALLET, error);
+      } else if ((error as any).code === 'INSUFFICIENT_FUNDS') {
+        throw new AppError('Insufficient funds for deployment', ErrorType.WALLET, error);
+      } else {
+        throw new AppError('Contract deployment failed', ErrorType.CONTRACT, error);
+      }
     }
   }
 
@@ -472,9 +567,16 @@ export class Web3Service {
   }
 
   disconnect(): void {
+    this.removeAllListeners();
     this.provider = null;
     this.signer = null;
     this.network = null;
+    
+    // Clear local storage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('walletAddress');
+    
+    console.log('Wallet disconnected');
   }
 }
 

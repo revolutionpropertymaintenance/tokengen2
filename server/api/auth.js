@@ -1,28 +1,16 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { ethers } = require('ethers');
+const { query } = require('../db');
+const { generateRandomString, hashData, verifyHash } = require('../utils/encryption');
+const { verifySignature } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Generate authentication token for wallet address
-router.post('/login', async (req, res) => {
+router.post('/login', verifySignature, async (req, res) => {
   try {
-    const { address, signature, message } = req.body;
-    
-    if (!address || !signature || !message) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    // Verify the signature
-    try {
-      const recoveredAddress = ethers.verifyMessage(message, signature);
-      
-      if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
-        return res.status(401).json({ error: 'Invalid signature' });
-      }
-    } catch (error) {
-      return res.status(401).json({ error: 'Signature verification failed' });
-    }
+    const { address } = req.body;
     
     // Generate JWT token
     const token = jwt.sign(
@@ -35,6 +23,9 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
     
+    // Log successful login
+    console.log(`User ${address.slice(0, 6)}...${address.slice(-4)} logged in successfully`);
+    
     res.json({
       success: true,
       token,
@@ -44,12 +35,12 @@ router.post('/login', async (req, res) => {
     
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Authentication failed' });
+    res.status(500).json({ error: 'Authentication failed', details: error.message });
   }
 });
 
 // Get authentication message for signing
-router.post('/message', (req, res) => {
+router.post('/message', async (req, res) => {
   try {
     const { address } = req.body;
     
@@ -57,8 +48,32 @@ router.post('/message', (req, res) => {
       return res.status(400).json({ error: 'Address is required' });
     }
     
+    // Check if user exists
+    const userResult = await query(
+      'SELECT * FROM users WHERE address = $1',
+      [address.toLowerCase()]
+    );
+    
+    let nonce;
+    
+    if (userResult.rows.length === 0) {
+      // Create new user
+      nonce = generateRandomString(16);
+      await query(
+        'INSERT INTO users (address, nonce) VALUES ($1, $2)',
+        [address.toLowerCase(), nonce]
+      );
+    } else {
+      // Update nonce for existing user
+      nonce = generateRandomString(16);
+      await query(
+        'UPDATE users SET nonce = $1 WHERE address = $2',
+        [nonce, address.toLowerCase()]
+      );
+    }
+    
     const timestamp = Date.now();
-    const message = `Welcome to TokenForge!\n\nSign this message to authenticate your wallet.\n\nAddress: ${address}\nTimestamp: ${timestamp}`;
+    const message = `Welcome to TokenForge!\n\nSign this message to authenticate your wallet.\n\nAddress: ${address}\nNonce: ${nonce}\nTimestamp: ${timestamp}`;
     
     res.json({
       message,
@@ -67,12 +82,12 @@ router.post('/message', (req, res) => {
     
   } catch (error) {
     console.error('Message generation error:', error);
-    res.status(500).json({ error: 'Failed to generate message' });
+    res.status(500).json({ error: 'Failed to generate message', details: error.message });
   }
 });
 
 // Verify token
-router.get('/verify', (req, res) => {
+router.get('/verify', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -84,18 +99,36 @@ router.get('/verify', (req, res) => {
     
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if user exists
+      const userResult = await query(
+        'SELECT * FROM users WHERE address = $1',
+        [decoded.address.toLowerCase()]
+      );
+      
+      if (userResult.rows.length === 0) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
       res.json({
         valid: true,
         address: decoded.address,
         expiresAt: decoded.exp
       });
     } catch (error) {
-      res.status(401).json({ error: 'Invalid token' });
+      if (error.name === 'JsonWebTokenError') {
+        res.status(401).json({ error: 'Invalid token' });
+      } else if (error.name === 'TokenExpiredError') {
+        res.status(401).json({ error: 'Token expired' });
+      } else {
+        console.error('Token verification error:', error);
+        res.status(500).json({ error: 'Verification failed' });
+      }
     }
     
   } catch (error) {
     console.error('Token verification error:', error);
-    res.status(500).json({ error: 'Verification failed' });
+    res.status(500).json({ error: 'Verification failed', details: error.message });
   }
 });
 
@@ -136,6 +169,12 @@ router.get('/esr/balance/:address', async (req, res) => {
       const formattedBalance = parseFloat(ethers.formatUnits(balance, decimals));
       console.log(`ESR balance for ${address}: ${formattedBalance}`);
       
+      // Store balance in database for future reference
+      await query(
+        'UPDATE users SET esr_balance = $1, esr_last_checked = CURRENT_TIMESTAMP WHERE address = $2',
+        [formattedBalance, address.toLowerCase()]
+      );
+      
       res.json({ 
         balance: formattedBalance,
         address: address,
@@ -150,7 +189,6 @@ router.get('/esr/balance/:address', async (req, res) => {
         balance: 0 
       });
     }
-    
     
   } catch (error) {
     console.error('ESR balance check error:', error);
@@ -195,11 +233,17 @@ router.post('/esr/deduct', async (req, res) => {
           return res.status(400).json({ error: 'Transaction is not for ESR token' });
         }
         
+        // Record the transaction in the database
+        await query(
+          'INSERT INTO transactions (transaction_hash, transaction_type, from_address, to_address, amount, token_address, network_id, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+          [txHash, 'ESR_DEDUCTION', receipt.from.toLowerCase(), PLATFORM_WALLET.toLowerCase(), amount, ESR_TOKEN_ADDRESS, 'ethereum', 'confirmed']
+        );
+        
         console.log(`Verified ESR token transfer transaction: ${txHash}`);
         return res.json({ success: true, verified: true });
       } catch (verifyError) {
         console.error('Transaction verification error:', verifyError);
-        return res.status(400).json({ error: 'Failed to verify transaction' });
+        return res.status(400).json({ error: 'Failed to verify transaction', details: verifyError.message });
       }
     }
     
@@ -211,7 +255,7 @@ router.post('/esr/deduct', async (req, res) => {
     
   } catch (error) {
     console.error('ESR deduction error:', error);
-    res.status(500).json({ error: 'Failed to deduct ESR tokens' });
+    res.status(500).json({ error: 'Failed to deduct ESR tokens', details: error.message });
   }
 });
 

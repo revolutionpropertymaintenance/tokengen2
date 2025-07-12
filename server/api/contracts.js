@@ -1,115 +1,190 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { ethers } = require('ethers');
 const { authenticate } = require('../middleware/auth');
+const { query } = require('../db');
 
 const router = express.Router();
 
 // Get user's deployed contracts
-router.get('/deployed', authenticate, (req, res) => {
+router.get('/deployed', authenticate, async (req, res) => {
   try {
     const userId = req.user.id;
-    const deploymentsDir = path.join(__dirname, '..', '..', 'deployments');
     
-    if (!fs.existsSync(deploymentsDir)) {
-      return res.json({ tokens: [], presales: [] });
-    }
+    // Get tokens from database
+    const tokensResult = await query(
+      'SELECT * FROM tokens WHERE owner_address = $1 ORDER BY created_at DESC',
+      [userId]
+    );
     
-    const files = fs.readdirSync(deploymentsDir);
-    const tokens = [];
-    const presales = [];
+    // Get presales from database
+    const presalesResult = await query(
+      'SELECT * FROM presales WHERE owner_address = $1 ORDER BY created_at DESC',
+      [userId]
+    );
     
-    files.forEach(file => {
-      if (file.endsWith('.json')) {
-        try {
-          const filePath = path.join(deploymentsDir, file);
-          const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          
-          // Check if this deployment belongs to the user
-          if (deployment.deployer && deployment.deployer.toLowerCase() === userId.toLowerCase()) {
-            if (deployment.contractType === 'PresaleContract') {
-              presales.push({
-                id: deployment.contractAddress,
-                contractAddress: deployment.contractAddress,
-                transactionHash: deployment.transactionHash,
-                network: deployment.network,
-                timestamp: deployment.timestamp,
-                verified: deployment.verified || false,
-                presaleConfig: deployment.presaleConfig,
-                tokenName: deployment.presaleConfig?.tokenInfo?.tokenName || 'Unknown',
-                tokenSymbol: deployment.presaleConfig?.tokenInfo?.tokenSymbol || 'UNK',
-                saleName: deployment.presaleConfig?.saleConfiguration?.saleName || 'Unknown Sale',
-                saleType: deployment.presaleConfig?.saleType || 'presale',
-                status: 'upcoming' // This would be calculated based on start/end dates
-              });
-            } else {
-              tokens.push({
-                id: deployment.contractAddress,
-                contractAddress: deployment.contractAddress,
-                transactionHash: deployment.transactionHash,
-                contractType: deployment.contractType,
-                network: deployment.network,
-                timestamp: deployment.timestamp,
-                verified: deployment.verified || false,
-                name: deployment.constructorArgs?.[0] || 'Unknown Token',
-                symbol: deployment.constructorArgs?.[1] || 'UNK',
-                decimals: deployment.constructorArgs?.[2] || 18,
-                totalSupply: deployment.constructorArgs?.[3] || '0',
-                maxSupply: deployment.constructorArgs?.[4] || '0'
-              });
-            }
-          }
-        } catch (error) {
-          console.error(`Error reading deployment file ${file}:`, error);
-        }
+    // Format tokens
+    const tokens = tokensResult.rows.map(token => ({
+      id: token.contract_address,
+      contractAddress: token.contract_address,
+      transactionHash: token.transaction_hash,
+      contractType: token.contract_type,
+      network: {
+        id: token.network_id,
+        name: token.network_name,
+        chainId: token.network_chain_id
+      },
+      timestamp: token.created_at,
+      verified: token.verified,
+      name: token.name,
+      symbol: token.symbol,
+      decimals: token.decimals,
+      totalSupply: token.initial_supply,
+      maxSupply: token.max_supply || '0',
+      features: token.features
+    }));
+    
+    // Format presales
+    const presales = presalesResult.rows.map(presale => {
+      // Calculate status based on current time vs sale dates
+      const now = new Date();
+      const saleConfig = presale.sale_configuration;
+      const startDate = saleConfig.startDate ? new Date(saleConfig.startDate) : new Date(Date.now() + 86400000);
+      const endDate = saleConfig.endDate ? new Date(saleConfig.endDate) : new Date(Date.now() + 14 * 86400000);
+      
+      let status = presale.status || 'upcoming';
+      if (status === 'upcoming' && now >= startDate && now <= endDate) {
+        status = 'live';
+      } else if (status === 'upcoming' && now > endDate) {
+        status = 'ended';
       }
+      
+      return {
+        id: presale.contract_address,
+        contractAddress: presale.contract_address,
+        transactionHash: presale.transaction_hash,
+        network: {
+          id: presale.network_id,
+          name: presale.network_name,
+          chainId: presale.network_chain_id
+        },
+        timestamp: presale.created_at,
+        verified: presale.verified,
+        presaleConfig: {
+          tokenInfo: presale.token_info,
+          saleConfiguration: presale.sale_configuration,
+          vestingConfig: presale.vesting_config,
+          walletSetup: presale.wallet_setup,
+          saleType: presale.sale_type
+        },
+        tokenName: presale.token_info?.tokenName || 'Unknown',
+        tokenSymbol: presale.token_info?.tokenSymbol || 'UNK',
+        saleName: presale.sale_configuration?.saleName || 'Unknown Sale',
+        saleType: presale.sale_type || 'presale',
+        status: status,
+        totalRaised: presale.total_raised || '0',
+        participantCount: presale.participant_count || 0
+      };
     });
     
     res.json({
-      tokens: tokens.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)),
-      presales: presales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      tokens,
+      presales
     });
     
   } catch (error) {
     console.error('Error fetching deployed contracts:', error);
-    res.status(500).json({ error: 'Failed to fetch contracts' });
+    res.status(500).json({ error: 'Failed to fetch contracts', details: error.message });
   }
 });
 
 // Get specific contract details
-router.get('/:address', authenticate, (req, res) => {
+router.get('/:address', authenticate, async (req, res) => {
   try {
     const { address } = req.params;
     const userId = req.user.id;
-    const deploymentsDir = path.join(__dirname, '..', '..', 'deployments');
     
-    if (!fs.existsSync(deploymentsDir)) {
-      return res.status(404).json({ error: 'Contract not found' });
+    // Check if token exists
+    const tokenResult = await query(
+      'SELECT * FROM tokens WHERE contract_address = $1',
+      [address.toLowerCase()]
+    );
+    
+    if (tokenResult.rows.length > 0) {
+      const token = tokenResult.rows[0];
+      
+      // Check if this token belongs to the user
+      if (token.owner_address.toLowerCase() !== userId.toLowerCase()) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      
+      return res.json({
+        contractType: token.contract_type,
+        contractAddress: token.contract_address,
+        transactionHash: token.transaction_hash,
+        network: {
+          id: token.network_id,
+          name: token.network_name,
+          chainId: token.network_chain_id
+        },
+        timestamp: token.created_at,
+        verified: token.verified,
+        name: token.name,
+        symbol: token.symbol,
+        decimals: token.decimals,
+        totalSupply: token.initial_supply,
+        maxSupply: token.max_supply || '0',
+        features: token.features,
+        owner: token.owner_address
+      });
     }
     
-    const files = fs.readdirSync(deploymentsDir);
+    // Check if presale exists
+    const presaleResult = await query(
+      'SELECT * FROM presales WHERE contract_address = $1',
+      [address.toLowerCase()]
+    );
     
-    for (const file of files) {
-      if (file.includes(address.toLowerCase()) && file.endsWith('.json')) {
-        try {
-          const filePath = path.join(deploymentsDir, file);
-          const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          
-          // Check if this deployment belongs to the user
-          if (deployment.deployer && deployment.deployer.toLowerCase() === userId.toLowerCase()) {
-            return res.json(deployment);
-          }
-        } catch (error) {
-          console.error(`Error reading deployment file ${file}:`, error);
-        }
+    if (presaleResult.rows.length > 0) {
+      const presale = presaleResult.rows[0];
+      
+      // Check if this presale belongs to the user
+      if (presale.owner_address.toLowerCase() !== userId.toLowerCase()) {
+        return res.status(403).json({ error: 'Access denied' });
       }
+      
+      return res.json({
+        contractType: 'PresaleContract',
+        contractAddress: presale.contract_address,
+        tokenAddress: presale.token_address,
+        transactionHash: presale.transaction_hash,
+        network: {
+          id: presale.network_id,
+          name: presale.network_name,
+          chainId: presale.network_chain_id
+        },
+        timestamp: presale.created_at,
+        verified: presale.verified,
+        presaleConfig: {
+          tokenInfo: presale.token_info,
+          saleConfiguration: presale.sale_configuration,
+          vestingConfig: presale.vesting_config,
+          walletSetup: presale.wallet_setup,
+          saleType: presale.sale_type
+        },
+        owner: presale.owner_address,
+        status: presale.status,
+        totalRaised: presale.total_raised,
+        participantCount: presale.participant_count
+      });
     }
     
     res.status(404).json({ error: 'Contract not found' });
     
   } catch (error) {
     console.error('Error fetching contract details:', error);
-    res.status(500).json({ error: 'Failed to fetch contract details' });
+    res.status(500).json({ error: 'Failed to fetch contract details', details: error.message });
   }
 });
 
@@ -120,51 +195,20 @@ router.get('/:address/stats', authenticate, async (req, res) => {
     const networkParam = req.query.network;
     const userId = req.user.id;
     
-    // Verify the contract belongs to the user
-    const deploymentsDir = path.join(__dirname, '..', '..', 'deployments');
-    let contractFound = false;
+    // Verify the contract exists
+    const tokenResult = await query(
+      'SELECT * FROM tokens WHERE contract_address = $1',
+      [address.toLowerCase()]
+    );
     
-    if (fs.existsSync(deploymentsDir)) {
-      const files = fs.readdirSync(deploymentsDir);
-      
-      for (const file of files) {
-        if (file.includes(address.toLowerCase()) && file.endsWith('.json')) {
-          try {
-            const filePath = path.join(deploymentsDir, file);
-            const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            
-            if (deployment.deployer && deployment.deployer.toLowerCase() === userId.toLowerCase()) {
-              contractFound = true;
-              break;
-            }
-          } catch (error) {
-            console.error(`Error reading deployment file ${file}:`, error);
-          }
-        }
-      }
+    if (tokenResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Token not found' });
     }
     
-    if (!contractFound) {
-      return res.status(404).json({ error: 'Contract not found or access denied' });
-    }
+    const token = tokenResult.rows[0];
     
-    // Get network information from deployment file or use default
-    let networkInfo;
-    try {
-      const deploymentFiles = fs.readdirSync(deploymentsDir);
-      for (const file of deploymentFiles) {
-        if (file.includes(address.toLowerCase()) && file.endsWith('.json')) {
-          const filePath = path.join(deploymentsDir, file);
-          const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          networkInfo = deployment.network;
-          break;
-        }
-      }
-    } catch (error) {
-      console.error('Error reading deployment files:', error);
-    }
-    
-    const networkName = networkInfo || networkParam || 'ethereum';
+    // Get network information
+    const networkName = networkParam || token.network_id || 'ethereum';
     
     // Connect to the appropriate blockchain network
     const rpcUrl = process.env[`${networkName.toUpperCase()}_RPC_URL`];
@@ -219,6 +263,27 @@ router.get('/:address/stats', authenticate, async (req, res) => {
         }
       });
       
+      // Update token statistics in database
+      try {
+        await query(
+          `UPDATE tokens SET 
+           total_supply = $1, 
+           holders_count = $2, 
+           transfer_count = $3, 
+           last_updated = CURRENT_TIMESTAMP 
+           WHERE contract_address = $4`,
+          [
+            ethers.formatUnits(totalSupply, decimals),
+            uniqueAddresses.size,
+            events.length,
+            address.toLowerCase()
+          ]
+        );
+      } catch (dbError) {
+        console.error('Error updating token statistics in database:', dbError);
+        // Continue even if database update fails
+      }
+      
       // Return token statistics
       const stats = {
         holders: uniqueAddresses.size,
@@ -240,69 +305,74 @@ router.get('/:address/stats', authenticate, async (req, res) => {
         transfers: 0,
         totalSupply: '0',
         lastUpdated: new Date().toISOString(),
-        error: 'Failed to query contract data'
+        error: 'Failed to query contract data',
+        details: contractError.message
       };
 
       res.json(stats);
     }
     
-    
   } catch (error) {
     console.error('Error fetching token statistics:', error);
-    res.status(500).json({ error: 'Failed to fetch token statistics' });
+    res.status(500).json({ error: 'Failed to fetch token statistics', details: error.message });
   }
 });
 
 // Get all public presales (for explorer)
-router.get('/presales/public', (req, res) => {
+router.get('/presales/public', async (req, res) => {
   try {
-    const deploymentsDir = path.join(__dirname, '..', '..', 'deployments');
+    // Get public presales from database
+    const presalesResult = await query(
+      `SELECT * FROM presales 
+       WHERE sale_type = 'presale' 
+       ORDER BY created_at DESC`,
+      []
+    );
     
-    if (!fs.existsSync(deploymentsDir)) {
-      return res.json([]);
-    }
-    
-    const files = fs.readdirSync(deploymentsDir);
-    const presales = [];
-    
-    files.forEach(file => {
-      if (file.includes('presale') && file.endsWith('.json')) {
-        try {
-          const filePath = path.join(deploymentsDir, file);
-          const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          
-          if (deployment.contractType === 'PresaleContract') {
-            // Only include public presales (not private sales)
-            if (deployment.presaleConfig?.saleType === 'presale') {
-              presales.push({
-                id: deployment.contractAddress,
-                contractAddress: deployment.contractAddress,
-                network: deployment.network,
-                timestamp: deployment.timestamp,
-                tokenName: deployment.presaleConfig?.tokenInfo?.tokenName || 'Unknown',
-                tokenSymbol: deployment.presaleConfig?.tokenInfo?.tokenSymbol || 'UNK',
-                saleName: deployment.presaleConfig?.saleConfiguration?.saleName || 'Unknown Sale',
-                saleType: deployment.presaleConfig?.saleType || 'presale',
-                softCap: deployment.presaleConfig?.saleConfiguration?.softCap || '0',
-                hardCap: deployment.presaleConfig?.saleConfiguration?.hardCap || '0',
-                tokenPrice: deployment.presaleConfig?.saleConfiguration?.tokenPrice || '0',
-                startDate: deployment.presaleConfig?.saleConfiguration?.startDate,
-                endDate: deployment.presaleConfig?.saleConfiguration?.endDate,
-                status: 'upcoming' // This would be calculated based on current time vs start/end dates
-              });
-            }
-          }
-        } catch (error) {
-          console.error(`Error reading presale deployment file ${file}:`, error);
-        }
+    // Format presales
+    const presales = presalesResult.rows.map(presale => {
+      // Calculate status based on current time vs sale dates
+      const now = new Date();
+      const saleConfig = presale.sale_configuration;
+      const startDate = saleConfig.startDate ? new Date(saleConfig.startDate) : new Date(Date.now() + 86400000);
+      const endDate = saleConfig.endDate ? new Date(saleConfig.endDate) : new Date(Date.now() + 14 * 86400000);
+      
+      let status = presale.status || 'upcoming';
+      if (status === 'upcoming' && now >= startDate && now <= endDate) {
+        status = 'live';
+      } else if (status === 'upcoming' && now > endDate) {
+        status = 'ended';
       }
+      
+      return {
+        id: presale.contract_address,
+        contractAddress: presale.contract_address,
+        network: {
+          id: presale.network_id,
+          name: presale.network_name,
+          chainId: presale.network_chain_id
+        },
+        timestamp: presale.created_at,
+        tokenName: presale.token_info?.tokenName || 'Unknown',
+        tokenSymbol: presale.token_info?.tokenSymbol || 'UNK',
+        saleName: presale.sale_configuration?.saleName || 'Unknown Sale',
+        saleType: presale.sale_type || 'presale',
+        softCap: presale.sale_configuration?.softCap || '0',
+        hardCap: presale.sale_configuration?.hardCap || '0',
+        tokenPrice: presale.sale_configuration?.tokenPrice || '0',
+        startDate: presale.sale_configuration?.startDate,
+        endDate: presale.sale_configuration?.endDate,
+        status: status,
+        totalRaised: presale.total_raised || '0',
+        participantCount: presale.participant_count || 0
+      };
     });
     
-    res.json(presales.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+    res.json(presales);
     
   } catch (error) {
     console.error('Error fetching public presales:', error);
-    res.status(500).json({ error: 'Failed to fetch presales' });
+    res.status(500).json({ error: 'Failed to fetch presales', details: error.message });
   }
 });
 
@@ -311,55 +381,21 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
   try {
     const { address } = req.params;
     const networkParam = req.query.network;
-    const userId = req.user.id;
     
-    // Verify the presale contract belongs to the user
-    const deploymentsDir = path.join(__dirname, '..', '..', 'deployments');
-    let presaleFound = false;
-    let presaleConfig = null;
+    // Verify the presale contract exists
+    const presaleResult = await query(
+      'SELECT * FROM presales WHERE contract_address = $1',
+      [address.toLowerCase()]
+    );
     
-    if (fs.existsSync(deploymentsDir)) {
-      const files = fs.readdirSync(deploymentsDir);
-      
-      for (const file of files) {
-        if (file.includes(address.toLowerCase()) && file.includes('presale') && file.endsWith('.json')) {
-          try {
-            const filePath = path.join(deploymentsDir, file);
-            const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-            
-            if (deployment.deployer && deployment.deployer.toLowerCase() === userId.toLowerCase()) {
-              presaleFound = true;
-              presaleConfig = deployment.presaleConfig;
-              break;
-            }
-          } catch (error) {
-            console.error(`Error reading presale deployment file ${file}:`, error);
-          }
-        }
-      }
+    if (presaleResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Presale contract not found' });
     }
     
-    if (!presaleFound) {
-      return res.status(404).json({ error: 'Presale contract not found or access denied' });
-    }
+    const presale = presaleResult.rows[0];
     
-    // Get network information from deployment file or use default
-    let networkInfo;
-    try {
-      const deploymentFiles = fs.readdirSync(deploymentsDir);
-      for (const file of deploymentFiles) {
-        if (file.includes(address.toLowerCase()) && file.endsWith('.json')) {
-          const filePath = path.join(deploymentsDir, file);
-          const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-          networkInfo = deployment.network;
-          break;
-        }
-      }
-    } catch (error) {
-      console.error('Error reading deployment files:', error);
-    }
-    
-    const networkName = networkInfo || networkParam || 'ethereum';
+    // Get network information
+    const networkName = networkParam || presale.network_id || 'ethereum';
     
     // Connect to the appropriate blockchain network
     const rpcUrl = process.env[`${networkName.toUpperCase()}_RPC_URL`];
@@ -400,6 +436,27 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
         status = 'ended';
       }
       
+      // Update presale statistics in database
+      try {
+        await query(
+          `UPDATE presales SET 
+           status = $1, 
+           total_raised = $2, 
+           participant_count = $3, 
+           last_updated = CURRENT_TIMESTAMP 
+           WHERE contract_address = $4`,
+          [
+            status,
+            ethers.formatEther(saleStats[0]),
+            Number(saleStats[1]),
+            address.toLowerCase()
+          ]
+        );
+      } catch (dbError) {
+        console.error('Error updating presale statistics in database:', dbError);
+        // Continue even if database update fails
+      }
+      
       // Return presale statistics
       const stats = {
         totalRaised: ethers.formatEther(saleStats[0]),
@@ -421,10 +478,10 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
       
       // Calculate status based on dates from stored config as fallback
       let status = 'upcoming';
-      if (presaleConfig?.saleConfiguration) {
+      if (presale.sale_configuration) {
         const now = new Date();
-        const startDate = presaleConfig.saleConfiguration.startDate ? new Date(presaleConfig.saleConfiguration.startDate) : new Date(Date.now() + 86400000);
-        const endDate = presaleConfig.saleConfiguration.endDate ? new Date(presaleConfig.saleConfiguration.endDate) : new Date(Date.now() + 14 * 86400000);
+        const startDate = presale.sale_configuration.startDate ? new Date(presale.sale_configuration.startDate) : new Date(Date.now() + 86400000);
+        const endDate = presale.sale_configuration.endDate ? new Date(presale.sale_configuration.endDate) : new Date(Date.now() + 14 * 86400000);
         
         if (now >= startDate && now <= endDate) {
           status = 'live';
@@ -435,23 +492,23 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
       
       // Return fallback statistics
       const stats = {
-        totalRaised: '0',
-        participantCount: 0,
+        totalRaised: presale.total_raised || '0',
+        participantCount: presale.participant_count || 0,
         totalTokensSold: '0',
         softCapReached: false,
         hardCapReached: false,
         status: status,
         lastUpdated: new Date().toISOString(),
-        error: 'Failed to query contract data'
+        error: 'Failed to query contract data',
+        details: contractError.message
       };
       
       res.json(stats);
     }
     
-    
   } catch (error) {
     console.error('Error fetching presale stats:', error);
-    res.status(500).json({ error: 'Failed to fetch presale statistics' });
+    res.status(500).json({ error: 'Failed to fetch presale statistics', details: error.message });
   }
 });
 

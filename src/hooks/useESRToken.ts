@@ -48,6 +48,19 @@ export const useESRToken = (): ESRTokenHook => {
         throw new AppError('Wallet provider not available', ErrorType.WALLET);
       }
       
+      // Get current network
+      const network = await provider.getNetwork();
+      const chainId = Number(network.chainId);
+      
+      // If this is a testnet, simulate a balance for testing
+      if (isTestnet(chainId)) {
+        console.log('Testnet detected, simulating ESR balance');
+        // Simulate a balance of 1000 ESR on testnets
+        setBalance(1000);
+        setIsLoading(false);
+        return;
+      }
+      
       // Create ESR token contract instance
       const esrContract = new ethers.Contract(ESR_TOKEN_ADDRESS, ESR_TOKEN_ABI, provider);
       
@@ -60,17 +73,14 @@ export const useESRToken = (): ESRTokenHook => {
       // Format balance from wei to human readable
       const formattedBalance = parseFloat(ethers.formatUnits(balanceWei, decimals));
       setBalance(formattedBalance);
-      
-      // If this is a testnet, simulate a balance for testing
-      if (isTestnet(await provider.getNetwork().then(n => Number(n.chainId)))) {
-        console.log('Testnet detected, simulating ESR balance');
-        // Simulate a balance of 1000 ESR on testnets
-        setBalance(1000);
-        return;
-      }
 
       // Log balance for debugging
       console.log(`ESR Balance for ${address.slice(0, 6)}...${address.slice(-4)}: ${formattedBalance} ESR`);
+      
+      // Store balance in local storage for persistence
+      localStorage.setItem('esrBalance', formattedBalance.toString());
+      localStorage.setItem('esrBalanceTimestamp', Date.now().toString());
+      
     } catch (error) {
       const errorMessage = (error as Error).message || 'Unknown error';
       console.error('Error checking ESR balance:', errorMessage);
@@ -149,11 +159,18 @@ export const useESRToken = (): ESRTokenHook => {
         
         // Notify backend about the transaction
         try {
-          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/esr/deduct`, {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/esr/deduct`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
             body: JSON.stringify({ amount, txHash })
           });
+          
+          if (!response.ok) {
+            console.warn('Backend notification about ESR deduction failed, but transaction was successful');
+          }
         } catch (apiError) {
           console.error('Failed to notify backend about ESR deduction:', apiError);
           // Continue even if backend notification fails
@@ -182,7 +199,6 @@ export const useESRToken = (): ESRTokenHook => {
   return {
     balance,
     isLoading,
-    error,
     error,
     checkBalance,
     deductTokens

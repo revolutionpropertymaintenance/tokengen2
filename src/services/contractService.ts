@@ -1,6 +1,6 @@
 import { TokenConfig, Network, VestingConfig } from '../types';
 import { PresaleConfig } from '../types/presale';
-import { AppError, ErrorType } from './errorHandler';
+import { AppError, ErrorType, reportError } from './errorHandler';
 import { web3Service } from './web3Service';
 
 export interface DeploymentResult {
@@ -166,6 +166,7 @@ export class ContractService {
       };
     } catch (error) {
       console.error('Error estimating deployment cost:', error);
+      reportError(new AppError('Failed to estimate deployment cost', ErrorType.CONTRACT, error));
       
       // Return fallback estimates
       return {
@@ -197,6 +198,30 @@ export class ContractService {
             ErrorType.NETWORK,
             error
           );
+        }
+      }
+
+      // Check if user has enough ESR tokens for mainnet deployment
+      if (!config.network.id.includes('testnet') && !config.network.id.includes('goerli') && !config.network.id.includes('sepolia')) {
+        try {
+          const esrBalance = await this.checkESRBalance(await web3Service.getSigner()?.getAddress() || '');
+          const requiredBalance = 100; // 100 ESR tokens required
+          
+          if (esrBalance < requiredBalance) {
+            throw new AppError(
+              `Insufficient ESR tokens. Required: ${requiredBalance}, Available: ${esrBalance.toFixed(2)}`,
+              ErrorType.VALIDATION
+            );
+          }
+          
+          // Deduct ESR tokens
+          await this.deductESRTokens(requiredBalance);
+        } catch (balanceError) {
+          if (balanceError instanceof AppError) {
+            throw balanceError;
+          } else {
+            throw new AppError('Failed to check or deduct ESR tokens', ErrorType.VALIDATION, balanceError);
+          }
         }
       }
 
@@ -264,6 +289,30 @@ export class ContractService {
         }
       }
       
+      // Check if user has enough ESR tokens for mainnet deployment
+      if (!config.network.id.includes('testnet') && !config.network.id.includes('goerli') && !config.network.id.includes('sepolia')) {
+        try {
+          const esrBalance = await this.checkESRBalance(await web3Service.getSigner()?.getAddress() || '');
+          const requiredBalance = 100; // 100 ESR tokens required
+          
+          if (esrBalance < requiredBalance) {
+            throw new AppError(
+              `Insufficient ESR tokens. Required: ${requiredBalance}, Available: ${esrBalance.toFixed(2)}`,
+              ErrorType.VALIDATION
+            );
+          }
+          
+          // Deduct ESR tokens
+          await this.deductESRTokens(requiredBalance);
+        } catch (balanceError) {
+          if (balanceError instanceof AppError) {
+            throw balanceError;
+          } else {
+            throw new AppError('Failed to check or deduct ESR tokens', ErrorType.VALIDATION, balanceError);
+          }
+        }
+      }
+      
       const response = await fetch(`${this.apiUrl}/api/deploy/presale`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -294,7 +343,8 @@ export class ContractService {
         network: config.network,
         explorerUrl: `${config.network.explorerUrl}/address/${result.contractAddress}`,
         gasUsed: result.gasUsed,
-        deploymentCost: result.deploymentCost
+        deploymentCost: result.deploymentCost,
+        salePageUrl: result.salePageUrl
       };
     } catch (error) {
       console.error('Error deploying presale contract:', error);
@@ -325,6 +375,7 @@ export class ContractService {
       return data.tokens || [];
     } catch (error) {
       console.error('Error fetching deployed tokens:', error);
+      reportError(new AppError('Failed to fetch deployed tokens', ErrorType.SERVER, error));
       return [];
     }
   }
@@ -344,6 +395,7 @@ export class ContractService {
       return data.presales || [];
     } catch (error) {
       console.error('Error fetching deployed presales:', error);
+      reportError(new AppError('Failed to fetch deployed presales', ErrorType.SERVER, error));
       return [];
     }
   }
@@ -361,53 +413,64 @@ export class ContractService {
       return data || [];
     } catch (error) {
       console.error('Error fetching public presales:', error);
+      reportError(new AppError('Failed to fetch public presales', ErrorType.SERVER, error));
       return [];
     }
   }
 
   async checkESRBalance(address: string): Promise<number> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/esr/balance/${address}`, {
+      const response = await fetch(`${this.apiUrl}/api/auth/esr/balance/${address}`, {
         headers: this.getAuthHeaders()
       });
 
       if (!response.ok) {
-        console.error(`Failed to fetch ESR balance: ${response.status} ${response.statusText}`);
-        return 0;
+        const errorData = await response.json();
+        throw new AppError(
+          errorData.error || 'Failed to fetch ESR balance',
+          ErrorType.SERVER,
+          errorData
+        );
       }
 
       const data = await response.json();
       return data.balance || 0;
     } catch (error) {
       console.error('Error fetching ESR balance:', error);
-      return 0;
+      if (error instanceof AppError) {
+        throw error;
+      } else {
+        throw new AppError('Failed to check ESR balance', ErrorType.SERVER, error);
+      }
     }
   }
 
   async deductESRTokens(amount: number = 100): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/esr/deduct`, {
+      const response = await fetch(`${this.apiUrl}/api/auth/esr/deduct`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ amount }),
       });
 
       if (!response.ok) {
-        let errorMessage = 'Failed to deduct ESR tokens';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          errorMessage = `Failed to deduct ESR tokens: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        throw new AppError(
+          errorData.error || 'Failed to deduct ESR tokens',
+          ErrorType.SERVER,
+          errorData
+        );
       }
 
       const data = await response.json();
       return data.success || false;
     } catch (error) {
       console.error('Error deducting ESR tokens:', error);
-      throw error;
+      if (error instanceof AppError) {
+        throw error;
+      } else {
+        throw new AppError('Failed to deduct ESR tokens', ErrorType.SERVER, error);
+      }
     }
   }
 
@@ -423,9 +486,12 @@ export class ContractService {
       });
 
       if (!response.ok) {
-        console.error(`Failed to fetch token statistics: ${response.status} ${response.statusText}`);
-        // Return default values if API call fails
-        return { holders: 0, transfers: 0, totalSupply: '0' };
+        const errorData = await response.json();
+        throw new AppError(
+          errorData.error || 'Failed to fetch token statistics',
+          ErrorType.SERVER,
+          errorData
+        );
       }
 
       const data = await response.json();
@@ -433,6 +499,7 @@ export class ContractService {
       // If there's an error in the response, log it and return defaults
       if (data.error) {
         console.error(`Error in token statistics response: ${data.error}`);
+        reportError(new AppError(data.error, ErrorType.SERVER, data.details));
       }
       
       return {
@@ -442,6 +509,7 @@ export class ContractService {
       };
     } catch (error) {
       console.error('Error fetching token statistics:', error);
+      reportError(new AppError('Failed to fetch token statistics', ErrorType.SERVER, error));
       return { holders: 0, transfers: 0, totalSupply: '0' };
     }
   }
@@ -461,8 +529,12 @@ export class ContractService {
       });
 
       if (!response.ok) {
-        console.error(`Failed to fetch sale statistics: ${response.status} ${response.statusText}`);
-        return { totalRaised: '0', participantCount: 0, status: 'upcoming' };
+        const errorData = await response.json();
+        throw new AppError(
+          errorData.error || 'Failed to fetch sale statistics',
+          ErrorType.SERVER,
+          errorData
+        );
       }
 
       const data = await response.json();
@@ -470,6 +542,7 @@ export class ContractService {
       // If there's an error in the response, log it
       if (data.error) {
         console.error(`Error in sale statistics response: ${data.error}`);
+        reportError(new AppError(data.error, ErrorType.SERVER, data.details));
       }
       
       return {
@@ -479,6 +552,7 @@ export class ContractService {
       };
     } catch (error) {
       console.error('Error fetching sale statistics:', error);
+      reportError(new AppError('Failed to fetch sale statistics', ErrorType.SERVER, error));
       return { totalRaised: '0', participantCount: 0, status: 'upcoming' };
     }
   }
