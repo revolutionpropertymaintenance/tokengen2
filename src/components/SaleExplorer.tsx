@@ -45,7 +45,7 @@ export const SaleExplorer: React.FC = () => {
     const loadSales = async () => {
       try {
         // Get deployed presales from contractService
-        const presales = contractService.getDeployedPresales();
+        const presales = await contractService.getPublicPresales();
         
         // Map to PublicSale interface
         const mappedSales: PublicSale[] = presales.map((sale: any, index: number) => {
