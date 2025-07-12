@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Clock, DollarSign, U
 import { PresaleConfig, PresaleDeploymentResult } from '../../types/presale';
 import { ESRBalanceCheck } from '../ESRBalanceCheck';
 import { contractService } from '../../services/contractService';
+import { useNetworkMode } from '../../hooks/useNetworkMode';
 import { web3Service } from '../../services/web3Service';
 
 interface PresaleReviewStepProps {
@@ -12,6 +13,7 @@ interface PresaleReviewStepProps {
 }
 
 export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, onBack, onDeploy }) => {
+  const { isTestnetMode } = useNetworkMode();
   const [isDeploying, setIsDeploying] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [hasEnoughESR, setHasEnoughESR] = useState(false);
@@ -279,7 +281,7 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
           {/* ESR Balance Check */}
           <ESRBalanceCheck 
             requiredAmount={100}
-            isTestnet={config.network.chainId > 1000000}
+            isTestnet={isTestnetMode || config.network.chainId > 1000000}
             onBalanceChange={setHasEnoughESR}
           />
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Users, Lock, Globe, Shield } from 'lucide-react';
 import { PresaleConfig } from '../../types/presale';
+import { useNetworkMode } from '../../hooks/useNetworkMode';
 
 interface SaleTypeStepProps {
   config: PresaleConfig;
@@ -9,6 +10,8 @@ interface SaleTypeStepProps {
 }
 
 export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBack }) => {
+  const { isTestnetMode } = useNetworkMode();
+  
   const handleNext = () => {
     onNext({});
   };
@@ -87,7 +90,7 @@ export const SaleTypeStep: React.FC<SaleTypeStepProps> = ({ config, onNext, onBa
                   <div key={index} className="flex items-center space-x-2">
                     <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
                     <span className="text-gray-300 text-sm">{feature}</span>
-                  </div>
+                  {isTestnetMode ? 'Free (Testnet)' : '100 ESR + Gas'}
                 ))}
               </div>
             </div>

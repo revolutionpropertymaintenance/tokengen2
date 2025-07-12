@@ -5,6 +5,7 @@ import { RemixFallback } from './RemixFallback';
 import { contractService } from '../services/contractService'; 
 import { vestingCategories } from '../data/vestingCategories';
 import { web3Service } from '../services/web3Service';
+import { useNetworkMode } from '../hooks/useNetworkMode';
 
 interface ReviewDeployProps {
   config: TokenConfig;
@@ -13,6 +14,7 @@ interface ReviewDeployProps {
 }
 
 export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDeploy }) => {
+  const { isTestnetMode } = useNetworkMode();
   const [isDeploying, setIsDeploying] = useState(false);
   const [isEstimating, setIsEstimating] = useState(true);
   const [agreed, setAgreed] = useState(false);
@@ -31,6 +33,14 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
   useEffect(() => {
     const fetchGasEstimate = async () => {
       try {
+        // If in testnet mode, ensure we're using a testnet network
+        if (isTestnetMode && !config.network.id.includes('testnet')) {
+          const testnet = networks.find(n => n.id.includes('testnet'));
+          if (testnet) {
+            updateConfig({ network: testnet });
+          }
+        }
+        
         setIsEstimating(true);
         const estimate = await contractService.estimateDeploymentCost({
           ...config,
@@ -46,7 +56,7 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     };
     
     fetchGasEstimate();
-  }, [config, useFactory]);
+  }, [config.features, config.network, config.initialSupply, config.name, config.symbol, useFactory, isTestnetMode]);
 
   const handleDeploy = async () => {
     if (!agreed) return;

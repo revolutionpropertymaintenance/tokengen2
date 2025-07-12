@@ -2,6 +2,7 @@ import { TokenConfig, Network, VestingConfig } from '../types';
 import { PresaleConfig } from '../types/presale';
 import { AppError, ErrorType, reportError } from './errorHandler';
 import { web3Service } from './web3Service';
+import { MODE_STORAGE_KEY, DEFAULT_MODE } from '../config/constants';
 
 export interface DeploymentResult {
   contractAddress: string;
@@ -18,7 +19,13 @@ export class ContractService {
 
   constructor() {
     this.apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    
+    // Initialize with the current network mode
+    this.isTestnetMode = localStorage.getItem(MODE_STORAGE_KEY) === 'testnet';
   }
+  
+  // Track current network mode
+  private isTestnetMode: boolean = false;
 
   async authenticate(address: string, signature: string, message: string): Promise<string> {
     try {
@@ -363,7 +370,9 @@ export class ContractService {
   async getDeployedTokens(): Promise<any[]> {
     try {
       const response = await fetch(`${this.apiUrl}/api/contracts/deployed`, {
-        headers: this.getAuthHeaders()
+        headers: this.getAuthHeaders(),
+        // Add a cache-busting parameter to avoid stale data
+        cache: 'no-cache'
       });
 
       if (!response.ok) {
@@ -372,7 +381,10 @@ export class ContractService {
       }
 
       const data = await response.json();
-      return data.tokens || [];
+      
+      // Filter tokens based on current mode
+      const tokens = data.tokens || [];
+      return this.isTestnetMode ? tokens.filter((t: any) => t.network?.id?.includes('testnet')) : tokens.filter((t: any) => !t.network?.id?.includes('testnet'));
     } catch (error) {
       console.error('Error fetching deployed tokens:', error);
       reportError(new AppError('Failed to fetch deployed tokens', ErrorType.SERVER, error));
@@ -392,7 +404,10 @@ export class ContractService {
       }
 
       const data = await response.json();
-      return data.presales || [];
+      
+      // Filter presales based on current mode
+      const presales = data.presales || [];
+      return this.isTestnetMode ? presales.filter((p: any) => p.network?.id?.includes('testnet')) : presales.filter((p: any) => !p.network?.id?.includes('testnet'));
     } catch (error) {
       console.error('Error fetching deployed presales:', error);
       reportError(new AppError('Failed to fetch deployed presales', ErrorType.SERVER, error));
@@ -410,7 +425,10 @@ export class ContractService {
       }
 
       const data = await response.json();
-      return data || [];
+      
+      // Filter presales based on current mode
+      const presales = data || [];
+      return this.isTestnetMode ? presales.filter((p: any) => p.network?.id?.includes('testnet')) : presales.filter((p: any) => !p.network?.id?.includes('testnet'));
     } catch (error) {
       console.error('Error fetching public presales:', error);
       reportError(new AppError('Failed to fetch public presales', ErrorType.SERVER, error));

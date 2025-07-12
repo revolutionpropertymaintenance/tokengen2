@@ -2,20 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle, Loader2, Wallet } from 'lucide-react';
 import { useESRToken } from '../hooks/useESRToken';
 import { useWallet } from '../hooks/useWallet';
+import { useNetworkMode } from '../hooks/useNetworkMode';
 
 interface ESRBalanceCheckProps {
   requiredAmount?: number;
-  isTestnet?: boolean;
+  isTestnet?: boolean; // This prop is now optional as we'll use the global mode
   onBalanceChange?: (hasEnough: boolean) => void;
 }
 
 export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({ 
   requiredAmount = 100, 
-  isTestnet = false,
+  isTestnet: propIsTestnet,
   onBalanceChange 
 }) => {
   const { isConnected, address } = useWallet();
   const { balance, isLoading, error, checkBalance, deductTokens } = useESRToken();
+  const { isTestnetMode } = useNetworkMode();
+  
+  // Use prop if provided, otherwise use global mode
+  const isTestnet = propIsTestnet !== undefined ? propIsTestnet : isTestnetMode;
+  
   const [isDeducting, setIsDeducting] = useState(false);
   const [deductError, setDeductError] = useState<string | null>(null);
   const [deductSuccess, setDeductSuccess] = useState(false);

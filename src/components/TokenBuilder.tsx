@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
 import { networks } from '../data/networks';
 import { contractService } from '../services/contractService';
+import { useNetworkMode } from '../hooks/useNetworkMode';
 
 interface TokenBuilderProps {
   onBack: () => void;
@@ -11,13 +12,14 @@ interface TokenBuilderProps {
 }
 
 export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, initialConfig }) => {
+  const { isTestnetMode } = useNetworkMode();
   const [config, setConfig] = useState<TokenConfig>({
     name: '',
     symbol: '',
     decimals: 18,
     initialSupply: '',
     maxSupply: '',
-    network: networks[0],
+    network: isTestnetMode ? networks.find(n => n.id.includes('testnet')) || networks[0] : networks[0],
     useFactory: true,
     features: {
       burnable: false,
@@ -38,6 +40,23 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
   const [gasEstimate, setGasEstimate] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Update network when testnet mode changes
+  useEffect(() => {
+    if (isTestnetMode && !config.network.id.includes('testnet')) {
+      // Switch to a testnet network
+      const testnet = networks.find(n => n.id.includes('testnet'));
+      if (testnet) {
+        updateConfig({ network: testnet });
+      }
+    } else if (!isTestnetMode && config.network.id.includes('testnet')) {
+      // Switch to a mainnet network
+      const mainnet = networks.find(n => !n.id.includes('testnet'));
+      if (mainnet) {
+        updateConfig({ network: mainnet });
+      }
+    }
+  }, [isTestnetMode, config.network.id]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

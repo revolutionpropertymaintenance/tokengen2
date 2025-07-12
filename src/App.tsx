@@ -10,6 +10,7 @@ import { DeployedTokens } from './components/DeployedTokens';
 import { SaleRouter } from './components/SaleRouter';
 import { SaleExplorer } from './components/SaleExplorer';
 import { TokenManagement } from './components/TokenManagement';
+import { ModeBanner } from './components/ModeBanner';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -85,6 +86,7 @@ function App() {
     case 'landing':
       return (
         <ErrorBoundary>
+        <ModeBanner />
         <LandingPage 
           onGetStarted={handleGetStarted}
           onLaunchSale={handleLaunchSale}
@@ -98,6 +100,7 @@ function App() {
     case 'builder':
       return (
         <ErrorBoundary>
+        <ModeBanner />
         <TokenBuilder
           onBack={goBack}
           onNext={handleTokenConfigComplete}
@@ -109,6 +112,7 @@ function App() {
     case 'vesting':
       return (
         <ErrorBoundary>
+        <ModeBanner />
         <VestingConfiguration
           config={tokenConfig!}
           onBack={goBack}
@@ -120,6 +124,7 @@ function App() {
     case 'review':
       return (
         <ErrorBoundary>
+        <ModeBanner />
         <ReviewDeploy
           config={tokenConfig!}
           onBack={goBack}
@@ -131,6 +136,7 @@ function App() {
     case 'success':
       return (
         <ErrorBoundary>
+        <ModeBanner />
         <DeploymentSuccess
           result={deploymentResult!}
           onStartNew={handleStartNew}
@@ -141,6 +147,7 @@ function App() {
     case 'presale':
       return (
         <ErrorBoundary>
+        <ModeBanner />
         <PresaleWizard
           onBack={() => setCurrentStep('landing')}
         />
@@ -148,23 +155,24 @@ function App() {
       );
     
     case 'sales':
-      return <ErrorBoundary><MySales /></ErrorBoundary>;
+      return <ErrorBoundary><ModeBanner /><MySales /></ErrorBoundary>;
     
     case 'tokens':
-      return <ErrorBoundary><DeployedTokens /></ErrorBoundary>;
+      return <ErrorBoundary><ModeBanner /><DeployedTokens /></ErrorBoundary>;
     
     case 'sale':
-      return <ErrorBoundary><SaleRouter /></ErrorBoundary>;
+      return <ErrorBoundary><ModeBanner /><SaleRouter /></ErrorBoundary>;
     
     case 'explore':
-      return <ErrorBoundary><SaleExplorer /></ErrorBoundary>;
+      return <ErrorBoundary><ModeBanner /><SaleExplorer /></ErrorBoundary>;
     
     case 'manage':
-      return <ErrorBoundary><TokenManagement /></ErrorBoundary>;
+      return <ErrorBoundary><ModeBanner /><TokenManagement /></ErrorBoundary>;
     
     default:
       return (
         <ErrorBoundary>
+        <ModeBanner />
         <LandingPage 
           onGetStarted={handleGetStarted}
           onLaunchSale={handleLaunchSale}
