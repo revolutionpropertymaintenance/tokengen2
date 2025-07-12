@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star } from 'lucide-react';
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
+import { useWallet } from '../hooks/useWallet';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -18,6 +19,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onViewTokens,
   onExploreSales
 }) => {
+  const { isConnected } = useWallet();
+  
   const { isConnected } = useWallet();
   
   const features = [

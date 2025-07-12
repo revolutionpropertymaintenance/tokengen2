@@ -21,67 +21,65 @@ export const useWallet = () => {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const connectWallet = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        setIsConnecting(true);
-        setWallet(prev => ({...prev, error: null}));
-        
-        // Request account access
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send('eth_requestAccounts', []);
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-        
-        // Get network info
-        const network = await provider.getNetwork();
-        
-        // Get balance
-        const balance = await provider.getBalance(address);
-        const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
-
-        // Get chain ID
-        const chainId = Number(network.chainId);
-        
-        // Authenticate with backend
-        // Authentication removed temporarily to fix connection issues
-        
-        // Store wallet info in localStorage for persistence
-        localStorage.setItem('walletAddress', address);
-        
-        setWallet({
-          isConnected: true,
-          address: address,
-          balance: formattedBalance,
-          chainId: chainId,
-          error: null
-        });
-
-        console.log(`Wallet connected: ${address} on chain ${chainId}`);
-        return address;
-      } catch (error) {
-        const errorMessage = (error as Error).message || 'Failed to connect wallet';
-        console.error('Error connecting wallet:', errorMessage);
-        setWallet({
-          isConnected: false,
-          address: null,
-          balance: null,
-          chainId: null,
-          error: errorMessage.includes('rejected') ? 'User rejected the connection request' : errorMessage
-        });
-        return null;
-      } finally {
-        setIsConnecting(false);
-      }
-    } else {
-      setWallet({
+    if (typeof window.ethereum === 'undefined') {
+      setWallet(prev => ({
+        ...prev, 
         isConnected: false,
         address: null,
         balance: null,
         chainId: null,
         error: 'No wallet detected. Please install MetaMask or another Web3 wallet.'
-      });
+      }));
       setIsConnecting(false);
       return null;
+    }
+    
+    try {
+      setIsConnecting(true);
+      setWallet(prev => ({...prev, error: null}));
+      
+      // Request account access
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send('eth_requestAccounts', []);
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+      
+      // Get network info
+      const network = await provider.getNetwork();
+      
+      // Get balance
+      const balance = await provider.getBalance(address);
+      const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
+
+      // Get chain ID
+      const chainId = Number(network.chainId);
+      
+      // Store wallet info in localStorage for persistence
+      localStorage.setItem('walletAddress', address);
+      
+      setWallet({
+        isConnected: true,
+        address: address,
+        balance: formattedBalance,
+        chainId: chainId,
+        error: null
+      });
+
+      console.log(`Wallet connected: ${address} on chain ${chainId}`);
+      return address;
+    } catch (error) {
+      const errorMessage = (error as Error).message || 'Failed to connect wallet';
+      console.error('Error connecting wallet:', errorMessage);
+      setWallet({
+        isConnected: false,
+        address: null,
+        balance: null,
+        chainId: null,
+        error: errorMessage.includes('rejected') ? 'User rejected the connection request' : errorMessage
+      });
+      return null;
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -170,10 +168,10 @@ export const useWallet = () => {
         const balance = await provider.getBalance(wallet.address);
         const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
         
-        setWallet(prev => ({
+        setWallet({
           ...prev,
           balance: formattedBalance
-        }));
+        });
       } catch (error) {
         console.error('Error updating balance:', error);
       }

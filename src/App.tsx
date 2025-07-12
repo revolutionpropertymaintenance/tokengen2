@@ -11,6 +11,7 @@ import { SaleRouter } from './components/SaleRouter';
 import { SaleExplorer } from './components/SaleExplorer';
 import { TokenManagement } from './components/TokenManagement';
 import { TokenConfig, DeploymentResult, Step } from './types';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 declare global {
   interface Window {
@@ -83,73 +84,7 @@ function App() {
   switch (currentStep) {
     case 'landing':
       return (
-        <LandingPage 
-          onGetStarted={handleGetStarted}
-          onLaunchSale={handleLaunchSale}
-          onViewSales={handleViewSales}
-          onViewTokens={handleViewTokens}
-        />
-      );
-    
-    case 'builder':
-      return (
-        <TokenBuilder
-          onBack={goBack}
-          onNext={handleTokenConfigComplete}
-          initialConfig={tokenConfig || undefined}
-        />
-      );
-    
-    case 'vesting':
-      return (
-        <VestingConfiguration
-          config={tokenConfig!}
-          onBack={goBack}
-          onNext={handleVestingComplete}
-        />
-      );
-    
-    case 'review':
-      return (
-        <ReviewDeploy
-          config={tokenConfig!}
-          onBack={goBack}
-          onDeploy={handleDeploy}
-        />
-      );
-    
-    case 'success':
-      return (
-        <DeploymentSuccess
-          result={deploymentResult!}
-          onStartNew={handleStartNew}
-        />
-      );
-    
-    case 'presale':
-      return (
-        <PresaleWizard
-          onBack={() => setCurrentStep('landing')}
-        />
-      );
-    
-    case 'sales':
-      return <MySales />;
-    
-    case 'tokens':
-      return <DeployedTokens />;
-    
-    case 'sale':
-      return <SaleRouter />;
-    
-    case 'explore':
-      return <SaleExplorer />;
-    
-    case 'manage':
-      return <TokenManagement />;
-    
-    default:
-      return (
+        <ErrorBoundary>
         <LandingPage 
           onGetStarted={handleGetStarted}
           onLaunchSale={handleLaunchSale}
@@ -157,6 +92,87 @@ function App() {
           onViewTokens={handleViewTokens}
           onExploreSales={handleExploreSales}
         />
+        </ErrorBoundary>
+      );
+    
+    case 'builder':
+      return (
+        <ErrorBoundary>
+        <TokenBuilder
+          onBack={goBack}
+          onNext={handleTokenConfigComplete}
+          initialConfig={tokenConfig || undefined}
+        />
+        </ErrorBoundary>
+      );
+    
+    case 'vesting':
+      return (
+        <ErrorBoundary>
+        <VestingConfiguration
+          config={tokenConfig!}
+          onBack={goBack}
+          onNext={handleVestingComplete}
+        />
+        </ErrorBoundary>
+      );
+    
+    case 'review':
+      return (
+        <ErrorBoundary>
+        <ReviewDeploy
+          config={tokenConfig!}
+          onBack={goBack}
+          onDeploy={handleDeploy}
+        />
+        </ErrorBoundary>
+      );
+    
+    case 'success':
+      return (
+        <ErrorBoundary>
+        <DeploymentSuccess
+          result={deploymentResult!}
+          onStartNew={handleStartNew}
+        />
+        </ErrorBoundary>
+      );
+    
+    case 'presale':
+      return (
+        <ErrorBoundary>
+        <PresaleWizard
+          onBack={() => setCurrentStep('landing')}
+        />
+        </ErrorBoundary>
+      );
+    
+    case 'sales':
+      return <ErrorBoundary><MySales /></ErrorBoundary>;
+    
+    case 'tokens':
+      return <ErrorBoundary><DeployedTokens /></ErrorBoundary>;
+    
+    case 'sale':
+      return <ErrorBoundary><SaleRouter /></ErrorBoundary>;
+    
+    case 'explore':
+      return <ErrorBoundary><SaleExplorer /></ErrorBoundary>;
+    
+    case 'manage':
+      return <ErrorBoundary><TokenManagement /></ErrorBoundary>;
+    
+    default:
+      return (
+        <ErrorBoundary>
+        <LandingPage 
+          onGetStarted={handleGetStarted}
+          onLaunchSale={handleLaunchSale}
+          onViewSales={handleViewSales}
+          onViewTokens={handleViewTokens}
+          onExploreSales={handleExploreSales}
+        />
+        </ErrorBoundary>
       );
   }
 }

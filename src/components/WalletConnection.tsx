@@ -3,7 +3,7 @@ import { Wallet, LogOut, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 
 export const WalletConnection: React.FC = () => {
-  const { isConnected, address, balance, connectWallet, disconnectWallet, isConnecting, error } = useWallet();
+  const { isConnected, address, balance, chainId, connectWallet, disconnectWallet, isConnecting, error } = useWallet();
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -42,9 +42,11 @@ export const WalletConnection: React.FC = () => {
               <span className="text-xs text-blue-300">
                 {balance} {chainId === 25062019 ? 'ESR' : chainId === 56 ? 'BNB' : 'ETH'}
               </span>
-              <span className="text-xs text-gray-400">
-                {getNetworkName(chainId)}
-              </span>
+              {chainId && (
+                <span className="text-xs text-gray-400">
+                  {getNetworkName(chainId)}
+                </span>
+              )}
             </div>
           </div>
         </div>
