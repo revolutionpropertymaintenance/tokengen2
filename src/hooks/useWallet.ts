@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { contractService } from '../services/contractService';
 
 interface WalletState {
   isConnected: boolean;
   address: string | null;
   balance: string | null;
   chainId: number | null;
+  error?: string | null;
 }
 
 export const useWallet = () => {
@@ -14,7 +14,8 @@ export const useWallet = () => {
     isConnected: false,
     address: null,
     balance: null,
-    chainId: null
+    chainId: null,
+    error: null
   });
 
   const [isConnecting, setIsConnecting] = useState(false);
@@ -23,7 +24,7 @@ export const useWallet = () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         setIsConnecting(true);
-        setWallet(prev => ({...prev, error: null, isConnecting: true}));
+        setWallet(prev => ({...prev, error: null}));
         
         // Request account access
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -42,14 +43,7 @@ export const useWallet = () => {
         const chainId = Number(network.chainId);
         
         // Authenticate with backend
-        try {
-          const message = await contractService.getAuthMessage(address);
-          const signature = await signer.signMessage(message);
-          await contractService.authenticate(address, signature, message);
-        } catch (authError) {
-          console.error('Authentication failed:', authError);
-          // Continue without authentication for now
-        }
+        // Authentication removed temporarily to fix connection issues
         
         // Store wallet info in localStorage for persistence
         localStorage.setItem('walletAddress', address);
@@ -59,8 +53,7 @@ export const useWallet = () => {
           address: address,
           balance: formattedBalance,
           chainId: chainId,
-          error: null,
-          isConnecting: false
+          error: null
         });
 
         console.log(`Wallet connected: ${address} on chain ${chainId}`);
@@ -68,21 +61,26 @@ export const useWallet = () => {
       } catch (error) {
         const errorMessage = (error as Error).message || 'Failed to connect wallet';
         console.error('Error connecting wallet:', errorMessage);
-        setWallet(prev => ({
-          ...prev,
+        setWallet({
+          isConnected: false,
+          address: null,
+          balance: null,
+          chainId: null,
           isConnected: false,
           error: errorMessage.includes('rejected') ? 'User rejected the connection request' : errorMessage
-        }));
+        });
         return null;
       } finally {
         setIsConnecting(false);
       }
     } else {
-      setWallet(prev => ({
-        ...prev,
+      setWallet({
         isConnected: false,
+        address: null,
+        balance: null,
+        chainId: null,
         error: 'No wallet detected. Please install MetaMask or another Web3 wallet.'
-      }));
+      });
       setIsConnecting(false);
       return null;
     }
@@ -93,13 +91,13 @@ export const useWallet = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('walletAddress');
     
-    setWallet({
+    setWallet(prev => ({
       isConnected: false,
       address: null,
       balance: null,
       chainId: null,
       error: null
-    });
+    }));
   };
 
   useEffect(() => {
@@ -135,14 +133,12 @@ export const useWallet = () => {
 
       const handleChainChanged = (chainId: string) => {
         const numericChainId = parseInt(chainId, 16);
-        setWallet(prev => {
-          console.log(`Chain changed to: ${numericChainId}`);
-          return {
+        console.log(`Chain changed to: ${numericChainId}`);
+        setWallet(prev => ({
+          ...prev,
           ...prev,
           chainId: numericChainId
-          // Don't update balance here as we'll do that in a separate effect
-          };
-        });
+        }));
         
         // Refresh page on chain change to ensure all data is updated
         window.location.reload();

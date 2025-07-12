@@ -1,7 +1,6 @@
 import React from 'react';
 import { Wallet, LogOut, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
-import { web3Service } from '../services/web3Service';
 
 export const WalletConnection: React.FC = () => {
   const { isConnected, address, balance, connectWallet, disconnectWallet, isConnecting, error } = useWallet();
@@ -13,7 +12,7 @@ export const WalletConnection: React.FC = () => {
   const getNetworkName = (chainId: number | null) => {
     if (!chainId) return 'Unknown';
     
-    const networks: Record<number, string> = {
+    const networks = {
       1: 'Ethereum',
       5: 'Goerli',
       56: 'BSC',
@@ -39,7 +38,7 @@ export const WalletConnection: React.FC = () => {
             <span className="text-sm font-medium text-white">
               {formatAddress(address!)}
             </span>
-            <div className="flex flex-col">
+            <div className="flex flex-col ml-2">
               <span className="text-xs text-blue-300">
                 {balance} {chainId === 25062019 ? 'ESR' : chainId === 56 ? 'BNB' : 'ETH'}
               </span>
