@@ -14,7 +14,8 @@ import {
   Calendar,
   Percent,
   Globe,
-  Lock
+  Lock,
+  ArrowLeft
 } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { useSaleContract } from '../hooks/useSaleContract';
@@ -188,6 +189,15 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
       <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => window.location.href = '/'}
+                className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Home</span>
+              </button>
+            </div>
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 {saleData.saleType === 'private' ? (
