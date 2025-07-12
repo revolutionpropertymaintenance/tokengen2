@@ -217,6 +217,13 @@ export const MySales: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
+          <button
+            onClick={() => window.location.href = '/'}
+            className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors mb-4"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Home</span>
+          </button>
           <h1 className="text-3xl font-bold text-white mb-2">My Sales</h1>
           <p className="text-gray-300">Manage and monitor your token sales</p>
         </div>
