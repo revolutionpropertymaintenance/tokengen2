@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
 import { networks, mainnets, testnets } from '../data/networks';
+import { NetworkMismatchModal } from './NetworkMismatchModal';
 import { contractService } from '../services/contractService';
 import { useNetworkMode } from '../hooks/useNetworkMode';
+import { useWallet } from '../hooks/useWallet';
 
 interface TokenBuilderProps {
   onBack: () => void;
@@ -13,6 +15,7 @@ interface TokenBuilderProps {
 
 export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, initialConfig }) => {
   const { isTestnetMode } = useNetworkMode();
+  const { chainId, isNetworkMismatch, switchToNetwork, isAttemptingSwitch, switchError } = useWallet();
   const [config, setConfig] = useState<TokenConfig>({
     name: '',
     symbol: '',
@@ -39,6 +42,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
   });
   const [gasEstimate, setGasEstimate] = useState<string | null>(null);
 
+  const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Update network when testnet mode changes
@@ -57,6 +61,26 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
       }
     }
   }, [isTestnetMode, config.network.id]);
+
+  // Show network mismatch modal when network is selected
+  const handleNetworkSelect = (network: Network) => {
+    updateConfig({ network });
+    
+    // Check if we need to switch networks in the wallet
+    if (chainId && chainId !== network.chainId) {
+      setShowNetworkModal(true);
+    }
+  };
+
+  // Handle network switch
+  const handleSwitchNetwork = async () => {
+    try {
+      await switchToNetwork(config.network.chainId);
+      setShowNetworkModal(false);
+    } catch (error) {
+      console.error('Failed to switch network:', error);
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -252,7 +276,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                       ? 'border-blue-500 bg-blue-500/20'
                       : 'border-white/20 bg-white/5 hover:border-white/40'
                   }`}
-                  onClick={() => updateConfig({ network })}
+                  onClick={() => handleNetworkSelect(network)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-white">{network.name}</h3>
@@ -506,6 +530,17 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
           </div>
         </form>
       </div>
+      
+      {/* Network Mismatch Modal */}
+      <NetworkMismatchModal
+        isOpen={showNetworkModal}
+        onClose={() => setShowNetworkModal(false)}
+        currentChainId={chainId}
+        targetNetwork={config.network}
+        onSwitchNetwork={handleSwitchNetwork}
+        isAttemptingSwitch={isAttemptingSwitch}
+        switchError={switchError}
+      />
     </div>
   );
 };

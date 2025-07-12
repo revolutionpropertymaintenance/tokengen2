@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { Network } from '../types';
 import { AppError, ErrorType, reportError } from './errorHandler';
+import { CHAIN_CONFIG } from '../config/chainConfig';
 
 export class Web3Service {
   private provider: ethers.BrowserProvider | null = null;
@@ -177,44 +178,49 @@ export class Web3Service {
   async switchNetwork(network: Network): Promise<void> {
     if (!window.ethereum) throw new AppError('MetaMask not found', ErrorType.WALLET);
     
+    const chainIdHex = `0x${network.chainId.toString(16)}`;
+    
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${network.chainId.toString(16)}` }],
+        params: [{ chainId: chainIdHex }],
       });
       
       // Update current network
       this.network = network;
     } catch (error: any) {
       if (error.code === 4902) {
-        await this.addNetwork(network);
+        // Chain not added to MetaMask, try to add it
+        const chainConfig = CHAIN_CONFIG[network.chainId];
+        
+        if (!chainConfig) {
+          throw new AppError(`Chain configuration not found for ${network.name}`, ErrorType.VALIDATION);
+        }
+        
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: chainConfig.chainId,
+              chainName: chainConfig.chainName,
+              nativeCurrency: chainConfig.nativeCurrency,
+              rpcUrls: chainConfig.rpcUrls,
+              blockExplorerUrls: chainConfig.blockExplorerUrls
+            }
+          ]
+        });
+        
+        // Try switching again after adding
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: chainIdHex }],
+        });
+        
+        // Update current network
+        this.network = network;
       } else {
         throw new AppError(`Failed to switch to ${network.name} network`, ErrorType.WALLET, error);
       }
-    }
-  }
-
-  private async addNetwork(network: Network): Promise<void> {
-    try {
-      await window.ethereum.request({
-        method: 'wallet_addEthereumChain',
-        params: [{
-          chainId: `0x${network.chainId.toString(16)}`,
-          chainName: network.name,
-          nativeCurrency: {
-            name: network.symbol,
-            symbol: network.symbol,
-            decimals: 18,
-          },
-          rpcUrls: [network.rpcUrl],
-          blockExplorerUrls: [network.explorerUrl],
-        }],
-      });
-      
-      // Update current network
-      this.network = network;
-    } catch (error) {
-      throw new AppError(`Failed to add ${network.name} network`, ErrorType.WALLET, error);
     }
   }
 

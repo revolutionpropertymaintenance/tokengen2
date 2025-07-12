@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { useNetworkMode } from './useNetworkMode';
+import { 
+  CHAIN_CONFIG, 
+  getMainnetChainIds, 
+  getTestnetChainIds, 
+  isMainnetChain, 
+  isTestnetChain 
+} from '../config/chainConfig';
 
 interface WalletState {
   isConnected: boolean;
@@ -10,6 +18,7 @@ interface WalletState {
 }
 
 export const useWallet = () => {
+  const { isTestnetMode } = useNetworkMode();
   const [wallet, setWallet] = useState<WalletState>({
     isConnected: false,
     address: null,
@@ -18,7 +27,23 @@ export const useWallet = () => {
     error: null
   });
 
+  const [isNetworkMismatch, setIsNetworkMismatch] = useState(false);
+  const [isAttemptingSwitch, setIsAttemptingSwitch] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+
+  // Check if the current chain is compatible with the current mode
+  useEffect(() => {
+    if (wallet.isConnected && wallet.chainId) {
+      const isCorrectNetworkType = isTestnetMode 
+        ? isTestnetChain(wallet.chainId) 
+        : isMainnetChain(wallet.chainId);
+      
+      setIsNetworkMismatch(!isCorrectNetworkType);
+    } else {
+      setIsNetworkMismatch(false);
+    }
+  }, [wallet.isConnected, wallet.chainId, isTestnetMode]);
 
   const connectWallet = async () => {
     if (typeof window.ethereum === 'undefined') {
@@ -81,6 +106,77 @@ export const useWallet = () => {
     } finally {
       setIsConnecting(false);
     }
+  };
+
+  const switchToNetwork = async (chainId: number) => {
+    if (typeof window.ethereum === 'undefined') {
+      throw new Error('MetaMask is not installed');
+    }
+
+    setIsAttemptingSwitch(true);
+    setSwitchError(null);
+
+    try {
+      // Try to switch to the network
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: `0x${chainId.toString(16)}` }],
+      });
+      
+      setIsNetworkMismatch(false);
+      return true;
+    } catch (switchError: any) {
+      // This error code indicates that the chain has not been added to MetaMask
+      if (switchError.code === 4902) {
+        try {
+          const chainConfig = CHAIN_CONFIG[chainId];
+          if (!chainConfig) {
+            throw new Error(`Chain configuration not found for chain ID ${chainId}`);
+          }
+
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: chainConfig.chainId,
+                chainName: chainConfig.chainName,
+                nativeCurrency: chainConfig.nativeCurrency,
+                rpcUrls: chainConfig.rpcUrls,
+                blockExplorerUrls: chainConfig.blockExplorerUrls,
+              },
+            ],
+          });
+          
+          // Try switching again after adding
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: `0x${chainId.toString(16)}` }],
+          });
+          
+          setIsNetworkMismatch(false);
+          return true;
+        } catch (addError: any) {
+          console.error('Error adding chain to MetaMask:', addError);
+          setSwitchError(`Failed to add network: ${addError.message}`);
+          return false;
+        }
+      } else {
+        console.error('Error switching chain:', switchError);
+        setSwitchError(`Failed to switch network: ${switchError.message}`);
+        return false;
+      }
+    } finally {
+      setIsAttemptingSwitch(false);
+    }
+  };
+
+  // Switch to a compatible network based on current mode
+  const switchToCompatibleNetwork = async () => {
+    const targetChainIds = isTestnetMode ? getTestnetChainIds() : getMainnetChainIds();
+    if (targetChainIds.length > 0) {
+      return await switchToNetwork(targetChainIds[0]);
+    }
+    return false;
   };
 
   const disconnectWallet = () => {
@@ -187,7 +283,12 @@ export const useWallet = () => {
   return {
     ...wallet,
     connectWallet,
+    switchToNetwork,
+    switchToCompatibleNetwork,
     disconnectWallet,
-    isConnecting
+    isConnecting,
+    isNetworkMismatch,
+    isAttemptingSwitch,
+    switchError
   };
 };

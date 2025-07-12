@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Zap, Clock, Shield, Globe } from 'lucide-react';
 import { TokenConfig, DeploymentResult } from '../types';
 import { RemixFallback } from './RemixFallback';
+import { NetworkMismatchModal } from './NetworkMismatchModal';
 import { contractService } from '../services/contractService'; 
 import { vestingCategories } from '../data/vestingCategories';
 import { web3Service } from '../services/web3Service';
@@ -15,6 +16,7 @@ interface ReviewDeployProps {
 
 export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDeploy }) => {
   const { isTestnetMode } = useNetworkMode();
+  const { chainId, switchToNetwork, isAttemptingSwitch, switchError } = useWallet();
   const [isDeploying, setIsDeploying] = useState(false);
   const [isEstimating, setIsEstimating] = useState(true);
   const [agreed, setAgreed] = useState(false);
@@ -28,6 +30,7 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     timeEstimate: '1-3 minutes',
     useFactory: true
   });
+  const [showNetworkModal, setShowNetworkModal] = useState(false);
 
   // Fetch real gas estimate on component mount
   useEffect(() => {
@@ -57,6 +60,23 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     
     fetchGasEstimate();
   }, [config.features, config.network, config.initialSupply, config.name, config.symbol, useFactory, isTestnetMode]);
+
+  // Check if we need to switch networks before deployment
+  useEffect(() => {
+    if (chainId && config.network.chainId !== chainId) {
+      setShowNetworkModal(true);
+    }
+  }, [chainId, config.network.chainId]);
+
+  // Handle network switch
+  const handleSwitchNetwork = async () => {
+    try {
+      await switchToNetwork(config.network.chainId);
+      setShowNetworkModal(false);
+    } catch (error) {
+      console.error('Failed to switch network:', error);
+    }
+  };
 
   const handleDeploy = async () => {
     if (!agreed) return;
@@ -381,6 +401,17 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
           </button>
         </div>
       </div>
+      
+      {/* Network Mismatch Modal */}
+      <NetworkMismatchModal
+        isOpen={showNetworkModal}
+        onClose={() => setShowNetworkModal(false)}
+        currentChainId={chainId}
+        targetNetwork={config.network}
+        onSwitchNetwork={handleSwitchNetwork}
+        isAttemptingSwitch={isAttemptingSwitch}
+        switchError={switchError}
+      />
     </div>
   );
 };
