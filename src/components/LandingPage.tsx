@@ -20,8 +20,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const { isConnected } = useWallet();
   
-  const { isConnected } = useWallet();
-  
   const features = [
     {
       icon: Zap,
