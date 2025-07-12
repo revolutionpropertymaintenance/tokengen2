@@ -227,15 +227,6 @@ export const MySales: React.FC = () => {
     });
   };
 
-  const getSaleStats = () => {
-    const totalSales = sales.length;
-    const liveSales = sales.filter(s => s.status === 'live').length;
-    const totalRaised = sales.reduce((sum, sale) => sum + parseFloat(sale.totalRaised || '0'), 0);
-    const totalParticipants = sales.reduce((sum, sale) => sum + (sale.participantCount || 0), 0);
-
-    return { totalSales, liveSales, totalRaised, totalParticipants };
-  };
-
   const stats = getSaleStats();
 
   return (
