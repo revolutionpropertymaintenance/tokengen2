@@ -257,15 +257,44 @@ export class ContractService {
     }
   }
 
-  // Legacy methods for ESR token handling (now handled by backend)
-  async deductESRTokens(amount: number = 100): Promise<boolean> {
-    // This is now handled by the backend during deployment
-    return true;
+  async checkESRBalance(address: string): Promise<number> {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/esr/balance/${address}`, {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch ESR balance');
+        return 0;
+      }
+
+      const data = await response.json();
+      return data.balance || 0;
+    } catch (error) {
+      console.error('Error fetching ESR balance:', error);
+      return 0;
+    }
   }
 
-  async checkESRBalance(address: string): Promise<number> {
-    // This would need to be implemented as an API call if needed
-    return 1000; // Mock balance for now
+  async deductESRTokens(amount: number = 100): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/esr/deduct`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ amount }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to deduct ESR tokens');
+      }
+
+      const data = await response.json();
+      return data.success || false;
+    } catch (error) {
+      console.error('Error deducting ESR tokens:', error);
+      throw error;
+    }
   }
 }
 

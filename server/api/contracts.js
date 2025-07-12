@@ -166,4 +166,26 @@ router.get('/presales/public', (req, res) => {
   }
 });
 
+// Get presale contract statistics
+router.get('/presale/:address/stats', authenticate, async (req, res) => {
+  try {
+    const { address } = req.params;
+    const userId = req.user.id;
+    
+    // In a real implementation, you would query the presale contract
+    // For now, return basic stats structure
+    res.json({
+      totalRaised: '0',
+      participantCount: 0,
+      totalTokensSold: '0',
+      softCapReached: false,
+      hardCapReached: false
+    });
+    
+  } catch (error) {
+    console.error('Error fetching presale stats:', error);
+    res.status(500).json({ error: 'Failed to fetch presale statistics' });
+  }
+});
+
 module.exports = router;

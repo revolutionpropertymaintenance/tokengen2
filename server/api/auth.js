@@ -99,4 +99,51 @@ router.get('/verify', (req, res) => {
   }
 });
 
+// ESR Token balance endpoint
+router.get('/esr/balance/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    
+    if (!address) {
+      return res.status(400).json({ error: 'Address is required' });
+    }
+    
+    // TODO: Implement actual ESR token balance checking
+    // This would require connecting to the blockchain and querying the ESR token contract
+    const balance = 0; // Placeholder - implement actual balance checking
+    
+    res.json({ balance });
+    
+  } catch (error) {
+    console.error('ESR balance check error:', error);
+    res.status(500).json({ error: 'Failed to check ESR balance' });
+  }
+});
+
+// ESR Token deduction endpoint
+router.post('/esr/deduct', authenticate, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const userAddress = req.user.address;
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Valid amount is required' });
+    }
+    
+    // TODO: Implement actual ESR token deduction
+    // This would require:
+    // 1. Checking user's ESR balance
+    // 2. Transferring ESR tokens to platform wallet
+    // 3. Recording the transaction
+    
+    const success = true; // Placeholder - implement actual deduction
+    
+    res.json({ success });
+    
+  } catch (error) {
+    console.error('ESR deduction error:', error);
+    res.status(500).json({ error: 'Failed to deduct ESR tokens' });
+  }
+});
+
 module.exports = router;

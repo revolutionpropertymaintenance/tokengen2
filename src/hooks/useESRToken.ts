@@ -1,6 +1,14 @@
 import { useState, useCallback } from 'react';
-import { ESR_TOKEN_ADDRESS } from '../config/constants';
-import { contractService } from '../services/contractService';
+import { ESR_TOKEN_ADDRESS, PLATFORM_WALLET } from '../config/constants';
+import { ethers } from 'ethers';
+import { web3Service } from '../services/web3Service';
+
+// ESR Token ABI (ERC-20 standard methods)
+const ESR_TOKEN_ABI = [
+  'function balanceOf(address owner) view returns (uint256)',
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function decimals() view returns (uint8)'
+];
 
 interface ESRTokenHook {
   balance: number;
@@ -18,12 +26,28 @@ export const useESRToken = (): ESRTokenHook => {
       setBalance(0);
       return;
     }
+    
+    if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
+      console.warn('ESR Token address not configured');
+      setBalance(0);
+      return;
+    }
 
     setIsLoading(true);
     try {
-      // Get ESR token balance using contractService
-      const esrBalance = await contractService.checkESRBalance(address);
-      setBalance(esrBalance);
+      const provider = web3Service.getProvider();
+      if (!provider) {
+        throw new Error('Provider not available');
+      }
+      
+      const esrContract = new ethers.Contract(ESR_TOKEN_ADDRESS, ESR_TOKEN_ABI, provider);
+      const [balance, decimals] = await Promise.all([
+        esrContract.balanceOf(address),
+        esrContract.decimals()
+      ]);
+      
+      const formattedBalance = parseFloat(ethers.formatUnits(balance, decimals));
+      setBalance(formattedBalance);
     } catch (error) {
       console.error('Error checking ESR balance:', error);
       setBalance(0);
@@ -36,10 +60,24 @@ export const useESRToken = (): ESRTokenHook => {
     if (!address) {
       throw new Error('Wallet not connected');
     }
+    
+    if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
+      throw new Error('ESR Token address not configured');
+    }
 
     try {
-      // Deduct ESR tokens using contractService
-      await contractService.deductESRTokens(amount);
+      const signer = web3Service.getSigner();
+      if (!signer) {
+        throw new Error('Signer not available');
+      }
+      
+      const esrContract = new ethers.Contract(ESR_TOKEN_ADDRESS, ESR_TOKEN_ABI, signer);
+      const decimals = await esrContract.decimals();
+      const amountWei = ethers.parseUnits(amount.toString(), decimals);
+      
+      // Transfer ESR tokens to platform wallet
+      const tx = await esrContract.transfer(PLATFORM_WALLET, amountWei);
+      await tx.wait();
       
       // Update balance after successful transaction
       setTimeout(() => {

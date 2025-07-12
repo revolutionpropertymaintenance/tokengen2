@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Search, ExternalLink, Coins, AlertCircle } from 'lucide-react';
 import { PresaleConfig } from '../../types/presale';
+import { contractService } from '../../services/contractService';
 
 interface TokenInfoStepProps {
   config: PresaleConfig;
@@ -22,34 +23,36 @@ export const TokenInfoStep: React.FC<TokenInfoStepProps> = ({ config, onNext, on
   const [allocatedAmount, setAllocatedAmount] = useState(config.tokenInfo.allocatedAmount);
   const [searchTerm, setSearchTerm] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [deployedTokens, setDeployedTokens] = useState<DeployedToken[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock deployed tokens - in production, fetch from user's deployed tokens
-  const [deployedTokens] = useState<DeployedToken[]>([
-    {
-      address: '0x1234567890abcdef1234567890abcdef12345678',
-      name: 'My Awesome Token',
-      symbol: 'MAT',
-      maxSupply: '1000000',
-      network: 'Ethereum',
-      deploymentDate: '2024-01-15'
-    },
-    {
-      address: '0x9876543210fedcba9876543210fedcba98765432',
-      name: 'Test Token',
-      symbol: 'TEST',
-      maxSupply: '500000',
-      network: 'BSC',
-      deploymentDate: '2024-01-14'
-    },
-    {
-      address: '0xabcdef1234567890abcdef1234567890abcdef12',
-      name: 'Community Coin',
-      symbol: 'COMM',
-      maxSupply: '2000000',
-      network: 'Polygon',
-      deploymentDate: '2024-01-13'
-    }
-  ]);
+  // Load deployed tokens from API
+  useEffect(() => {
+    const loadDeployedTokens = async () => {
+      try {
+        setIsLoading(true);
+        const tokens = await contractService.getDeployedTokens();
+        
+        const mappedTokens: DeployedToken[] = tokens.map((token: any) => ({
+          address: token.contractAddress,
+          name: token.name,
+          symbol: token.symbol,
+          maxSupply: token.maxSupply || token.totalSupply || '0',
+          network: token.network,
+          deploymentDate: token.timestamp
+        }));
+        
+        setDeployedTokens(mappedTokens);
+      } catch (error) {
+        console.error('Error loading deployed tokens:', error);
+        setDeployedTokens([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadDeployedTokens();
+  }, []);
 
   useEffect(() => {
     if (config.tokenInfo.tokenAddress) {
@@ -128,12 +131,20 @@ export const TokenInfoStep: React.FC<TokenInfoStepProps> = ({ config, onNext, on
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-white">Your Deployed Tokens</h3>
         
-        {filteredTokens.length === 0 ? (
+        {isLoading ? (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-12 border border-white/10 text-center">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-white">Loading your deployed tokens...</p>
+          </div>
+        ) : filteredTokens.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-12 border border-white/10 text-center">
             <Coins className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">No Tokens Found</h3>
             <p className="text-gray-300">
-              {searchTerm ? 'No tokens match your search criteria' : 'You haven\'t deployed any tokens yet'}
+              {deployedTokens.length === 0 
+                ? "You haven't deployed any tokens yet. Create a token first before launching a sale."
+                : 'No tokens match your search criteria'
+              }
             </p>
           </div>
         ) : (

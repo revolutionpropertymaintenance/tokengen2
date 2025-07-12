@@ -65,12 +65,15 @@ export const DeployedTokens: React.FC = () => {
             transactionHash: token.transactionHash || '',
             features: token.contractType.includes('Burnable') ? ['Burnable'] : [],
             status: 'verified',
-            holders: Math.floor(Math.random() * 1000) + 1, // Placeholder
-            transfers: Math.floor(Math.random() * 5000) + 1 // Placeholder
+            holders: 0, // Will be fetched from blockchain if needed
+            transfers: 0 // Will be fetched from blockchain if needed
           };
         });
         
         setDeployedTokens(mappedTokens);
+        
+        // Optionally fetch real statistics for each token
+        await fetchTokenStatistics(mappedTokens);
       } catch (error) {
         console.error('Error loading deployed tokens:', error);
       }
@@ -79,6 +82,19 @@ export const DeployedTokens: React.FC = () => {
     loadDeployedTokens();
   }, []);
 
+  const fetchTokenStatistics = async (tokens: DeployedToken[]) => {
+    // This is optional - only implement if you need real statistics
+    // It requires additional blockchain queries which may be expensive
+    try {
+      for (const token of tokens) {
+        // You could implement actual blockchain queries here
+        // const stats = await getTokenStatistics(token.contractAddress, token.network);
+        // Update token with real statistics
+      }
+    } catch (error) {
+      console.error('Error fetching token statistics:', error);
+    }
+  };
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(type);

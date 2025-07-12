@@ -37,6 +37,18 @@ export const MySales: React.FC = () => {
         
         // Map to PresaleConfig interface
         const mappedSales: PresaleConfig[] = presales.map((sale: any, index: number) => {
+          // Calculate status based on dates
+          const now = new Date();
+          const startDate = new Date(sale.presaleConfig?.saleConfiguration?.startDate || now);
+          const endDate = new Date(sale.presaleConfig?.saleConfiguration?.endDate || now);
+          
+          let status: 'upcoming' | 'live' | 'ended' = 'upcoming';
+          if (now >= startDate && now <= endDate) {
+            status = 'live';
+          } else if (now > endDate) {
+            status = 'ended';
+          }
+          
           return {
             id: (index + 1).toString(),
             saleType: sale.saleType || 'presale',
@@ -49,34 +61,37 @@ export const MySales: React.FC = () => {
             },
             saleConfiguration: {
               saleName: sale.saleName,
-              softCap: '10',
-              hardCap: '100',
-              tokenPrice: '1000',
-              minPurchase: '0.1',
-              maxPurchase: '10',
-              startDate: new Date().toISOString(),
-              endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-              whitelistEnabled: false
+              softCap: sale.presaleConfig?.saleConfiguration?.softCap || '10',
+              hardCap: sale.presaleConfig?.saleConfiguration?.hardCap || '100',
+              tokenPrice: sale.presaleConfig?.saleConfiguration?.tokenPrice || '1000',
+              minPurchase: sale.presaleConfig?.saleConfiguration?.minPurchase || '0.1',
+              maxPurchase: sale.presaleConfig?.saleConfiguration?.maxPurchase || '10',
+              startDate: sale.presaleConfig?.saleConfiguration?.startDate || new Date().toISOString(),
+              endDate: sale.presaleConfig?.saleConfiguration?.endDate || new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              whitelistEnabled: sale.presaleConfig?.saleConfiguration?.whitelistEnabled || false
             },
             vestingConfig: {
-              enabled: false,
-              duration: 0,
-              initialRelease: 0
+              enabled: sale.presaleConfig?.vestingConfig?.enabled || false,
+              duration: sale.presaleConfig?.vestingConfig?.duration || 0,
+              initialRelease: sale.presaleConfig?.vestingConfig?.initialRelease || 0
             },
             walletSetup: {
               saleReceiver: '',
               refundWallet: ''
             },
             network: networks.find(n => n.id === sale.network.id) || networks[0],
-            status: sale.status || 'upcoming',
+            status: status,
             contractAddress: sale.contractAddress,
-            totalRaised: '0',
-            participantCount: 0,
+            totalRaised: sale.totalRaised || '0',
+            participantCount: sale.participantCount || 0,
             createdAt: new Date(sale.timestamp).toISOString()
           };
         });
         
         setSales(mappedSales);
+        
+        // Fetch real-time sale data from contracts
+        await fetchSaleStatistics(mappedSales);
       } catch (error) {
         console.error('Error loading sales:', error);
       }
@@ -85,6 +100,36 @@ export const MySales: React.FC = () => {
     loadSales();
   }, []);
 
+  const fetchSaleStatistics = async (sales: PresaleConfig[]) => {
+    try {
+      // Fetch real-time data from presale contracts
+      const updatedSales = await Promise.all(
+        sales.map(async (sale) => {
+          try {
+            if (sale.contractAddress) {
+              const response = await fetch(`/api/contracts/presale/${sale.contractAddress}/stats`);
+              if (response.ok) {
+                const stats = await response.json();
+                return {
+                  ...sale,
+                  totalRaised: stats.totalRaised || sale.totalRaised,
+                  participantCount: stats.participantCount || sale.participantCount
+                };
+              }
+            }
+            return sale;
+          } catch (error) {
+            console.error(`Error fetching stats for sale ${sale.id}:`, error);
+            return sale;
+          }
+        })
+      );
+      
+      setSales(updatedSales);
+    } catch (error) {
+      console.error('Error fetching sale statistics:', error);
+    }
+  };
   const filteredSales = sales.filter(sale => {
     const matchesStatus = selectedStatus === 'all' || sale.status === selectedStatus;
     const matchesSearch = sale.saleConfiguration.saleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
