@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, ExternalLink, Copy, Share2, Settings, RefreshCw, Calendar, Users } from 'lucide-react';
+import { CheckCircle, ExternalLink, Copy, Share2, Settings, RefreshCw, Calendar, Users, ArrowLeft } from 'lucide-react';
 import { PresaleDeploymentResult } from '../../types/presale';
 
 interface PresaleSuccessStepProps {

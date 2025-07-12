@@ -9,7 +9,8 @@ import {
   TrendingUp,
   Eye,
   MoreVertical,
-  Download
+  Download,
+  ArrowLeft
 } from 'lucide-react';
 import { Network } from '../types';
 import { networks } from '../data/networks';

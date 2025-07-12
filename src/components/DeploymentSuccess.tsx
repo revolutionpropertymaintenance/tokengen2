@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, ExternalLink, Copy, Share2, Download, RefreshCw } from 'lucide-react';
+import { CheckCircle, ExternalLink, Copy, Share2, Download, RefreshCw, ArrowLeft } from 'lucide-react';
 import { DeploymentResult } from '../types';
 
 interface DeploymentSuccessProps {

@@ -14,7 +14,8 @@ import {
   Play,
   Pause,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { PresaleConfig } from '../types/presale';
 import { networks } from '../data/networks';
