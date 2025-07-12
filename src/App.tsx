@@ -14,6 +14,7 @@ import { NotFound } from './components/NotFound';
 import { ModeBanner } from './components/ModeBanner';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { useNetworkMode } from './hooks/useNetworkMode';
 
 declare global {
   interface Window {
@@ -22,6 +23,7 @@ declare global {
 }
 
 function App() {
+  const { isTestnetMode } = useNetworkMode();
   const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
@@ -87,7 +89,6 @@ function App() {
     case 'landing':
       return (
         <ErrorBoundary>
-        <ModeBanner />
         <LandingPage 
           onGetStarted={handleGetStarted}
           onLaunchSale={handleLaunchSale}
@@ -101,7 +102,7 @@ function App() {
     case 'builder':
       return (
         <ErrorBoundary>
-        <ModeBanner />
+        {isTestnetMode && <ModeBanner />}
         <TokenBuilder
           onBack={goBack}
           onNext={handleTokenConfigComplete}
@@ -113,7 +114,7 @@ function App() {
     case 'vesting':
       return (
         <ErrorBoundary>
-        <ModeBanner />
+        {isTestnetMode && <ModeBanner />}
         <VestingConfiguration
           config={tokenConfig!}
           onBack={goBack}
@@ -125,7 +126,7 @@ function App() {
     case 'review':
       return (
         <ErrorBoundary>
-        <ModeBanner />
+        {isTestnetMode && <ModeBanner />}
         <ReviewDeploy
           config={tokenConfig!}
           onBack={goBack}
@@ -137,7 +138,7 @@ function App() {
     case 'success':
       return (
         <ErrorBoundary>
-        <ModeBanner />
+        {isTestnetMode && <ModeBanner />}
         <DeploymentSuccess
           result={deploymentResult!}
           onStartNew={handleStartNew}
@@ -148,7 +149,7 @@ function App() {
     case 'presale':
       return (
         <ErrorBoundary>
-        <ModeBanner />
+        {isTestnetMode && <ModeBanner />}
         <PresaleWizard
           onBack={() => setCurrentStep('landing')}
         />
@@ -156,19 +157,19 @@ function App() {
       );
     
     case 'sales':
-      return <ErrorBoundary><ModeBanner /><MySales /></ErrorBoundary>;
+      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<MySales /></ErrorBoundary>;
     
     case 'tokens':
-      return <ErrorBoundary><ModeBanner /><DeployedTokens /></ErrorBoundary>;
+      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<DeployedTokens /></ErrorBoundary>;
     
     case 'sale':
-      return <ErrorBoundary><ModeBanner /><SaleRouter /></ErrorBoundary>;
+      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<SaleRouter /></ErrorBoundary>;
     
     case 'explore':
-      return <ErrorBoundary><ModeBanner /><SaleExplorer /></ErrorBoundary>;
+      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<SaleExplorer /></ErrorBoundary>;
     
     case 'manage':
-      return <ErrorBoundary><ModeBanner /><TokenManagement /></ErrorBoundary>;
+      return <ErrorBoundary>{isTestnetMode && <ModeBanner />}<TokenManagement /></ErrorBoundary>;
     
     case '404':
       return <ErrorBoundary><NotFound /></ErrorBoundary>;
@@ -181,7 +182,6 @@ function App() {
       } else {
         return (
           <ErrorBoundary>
-          <ModeBanner />
           <LandingPage 
             onGetStarted={handleGetStarted}
             onLaunchSale={handleLaunchSale}
