@@ -66,7 +66,6 @@ export const useWallet = () => {
           address: null,
           balance: null,
           chainId: null,
-          isConnected: false,
           error: errorMessage.includes('rejected') ? 'User rejected the connection request' : errorMessage
         });
         return null;
