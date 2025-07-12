@@ -2,6 +2,507 @@
 
 TokenForge is a comprehensive platform for creating and deploying professional-grade ERC-20/BEP-20 tokens across multiple blockchains. With an intuitive interface and advanced features, TokenForge makes token creation accessible to everyone, regardless of technical expertise.
 
+## Theme Colors and CSS
+
+### Global Theme Colors
+```css
+/* Primary Gradients */
+.primary-gradient {
+  background-image: linear-gradient(to right, from-blue-500 to-purple-600);
+}
+
+.secondary-gradient {
+  background-image: linear-gradient(to right, from-green-500 to-blue-600);
+}
+
+/* Background Colors */
+.page-background {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.card-background {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Status Colors */
+.status-live {
+  color: #4ade80; /* text-green-400 */
+  background-color: rgba(74, 222, 128, 0.2); /* bg-green-500/20 */
+}
+
+.status-upcoming {
+  color: #60a5fa; /* text-blue-400 */
+  background-color: rgba(96, 165, 250, 0.2); /* bg-blue-500/20 */
+}
+
+.status-ended {
+  color: #9ca3af; /* text-gray-400 */
+  background-color: rgba(156, 163, 175, 0.2); /* bg-gray-500/20 */
+}
+
+.status-cancelled {
+  color: #f87171; /* text-red-400 */
+  background-color: rgba(248, 113, 113, 0.2); /* bg-red-500/20 */
+}
+```
+
+### Page-Specific Themes
+
+#### Landing Page
+```css
+.landing-page {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.hero-heading {
+  font-size: 5rem;
+  font-weight: 700;
+  color: white;
+}
+
+.hero-gradient-text {
+  background-image: linear-gradient(to right, from-blue-400 to-purple-400);
+  background-clip: text;
+  color: transparent;
+}
+
+.feature-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 2rem;
+}
+
+.feature-icon {
+  width: 3rem;
+  height: 3rem;
+  background-image: linear-gradient(to right, from-blue-500 to-purple-600);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+```
+
+#### Token Builder
+```css
+.token-builder {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.form-section {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.form-input {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: white;
+}
+
+.network-card {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.network-card.selected {
+  border-color: #3b82f6; /* border-blue-500 */
+  background-color: rgba(59, 130, 246, 0.2); /* bg-blue-500/20 */
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.25); /* shadow-lg shadow-blue-500/25 */
+}
+
+.warning-banner {
+  background-color: rgba(245, 158, 11, 0.2); /* bg-amber-500/20 */
+  border: 1px solid rgba(245, 158, 11, 0.5); /* border-amber-500/50 */
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+```
+
+#### Vesting Configuration
+```css
+.vesting-page {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.vesting-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.vesting-card-header {
+  padding: 1.5rem;
+}
+
+.vesting-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-image: linear-gradient(to right, from-blue-500 to-purple-600);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vesting-timeline {
+  position: relative;
+}
+
+.timeline-dot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+}
+
+.timeline-line {
+  flex: 1;
+  height: 0.125rem;
+  background-image: linear-gradient(to right, from-green-500 to-blue-500);
+}
+```
+
+#### Review & Deploy
+```css
+.review-page {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.summary-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.deploy-button {
+  background-image: linear-gradient(to right, from-green-500 to-blue-600);
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deploy-button:hover {
+  background-image: linear-gradient(to right, from-green-600 to-blue-700);
+}
+
+.cost-summary {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+```
+
+#### Deployment Success
+```css
+.success-page {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.success-icon {
+  width: 5rem;
+  height: 5rem;
+  background-image: linear-gradient(to right, from-green-500 to-blue-600);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem auto;
+}
+
+.contract-details {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.code-display {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.action-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+```
+
+#### My Tokens Dashboard
+```css
+.tokens-dashboard {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.stats-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.network-filter {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.network-filter.active {
+  border-color: #3b82f6; /* border-blue-500 */
+  background-color: rgba(59, 130, 246, 0.2); /* bg-blue-500/20 */
+}
+
+.token-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+```
+
+#### My Sales Dashboard
+```css
+.sales-dashboard {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.sale-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  background-color: #374151; /* bg-gray-700 */
+  border-radius: 9999px;
+  height: 0.5rem;
+}
+
+.progress-bar {
+  background-image: linear-gradient(to right, from-blue-500 to-purple-600);
+  height: 0.5rem;
+  border-radius: 9999px;
+  transition: width 0.3s;
+}
+
+.sale-icon {
+  width: 3rem;
+  height: 3rem;
+  background-image: linear-gradient(to right, from-blue-500 to-purple-600);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
+#### Presale Wizard
+```css
+.presale-wizard {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.wizard-progress {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.step-indicator {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 2px;
+}
+
+.step-active {
+  border-color: #60a5fa; /* border-blue-400 */
+  background-color: rgba(96, 165, 250, 0.2); /* bg-blue-400/20 */
+  color: #60a5fa; /* text-blue-400 */
+}
+
+.step-completed {
+  border-color: #4ade80; /* border-green-400 */
+  background-color: rgba(74, 222, 128, 0.2); /* bg-green-400/20 */
+  color: #4ade80; /* text-green-400 */
+}
+
+.step-inactive {
+  border-color: #9ca3af; /* border-gray-400 */
+  background-color: rgba(156, 163, 175, 0.2); /* bg-gray-400/20 */
+  color: #9ca3af; /* text-gray-400 */
+}
+
+.step-connector {
+  width: 4rem;
+  height: 0.125rem;
+  flex-shrink: 0;
+}
+
+.connector-completed {
+  background-color: #4ade80; /* bg-green-400 */
+}
+
+.connector-inactive {
+  background-color: #4b5563; /* bg-gray-600 */
+}
+```
+
+#### Sale Page
+```css
+.sale-page {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.sale-header {
+  background-color: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sale-status-banner {
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.sale-status-live {
+  background-color: rgba(74, 222, 128, 0.2); /* bg-green-500/20 */
+  border: 1px solid rgba(74, 222, 128, 0.5); /* border-green-500/50 */
+}
+
+.sale-status-upcoming {
+  background-color: rgba(96, 165, 250, 0.2); /* bg-blue-500/20 */
+  border: 1px solid rgba(96, 165, 250, 0.5); /* border-blue-500/50 */
+}
+
+.sale-status-ended {
+  background-color: rgba(156, 163, 175, 0.2); /* bg-gray-500/20 */
+  border: 1px solid rgba(156, 163, 175, 0.5); /* border-gray-500/50 */
+}
+
+.purchase-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.buy-button {
+  width: 100%;
+  background-image: linear-gradient(to right, from-blue-500 to-purple-600);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+```
+
+#### Sale Explorer
+```css
+.explorer-page {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.filter-bar {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.search-input {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  padding-left: 2.5rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  color: white;
+}
+
+.sale-grid-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.sale-grid-card:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.view-sale-button {
+  width: 100%;
+  background-image: linear-gradient(to right, from-blue-500 to-purple-600);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
 ## Page Themes and Design
 
 ### Landing Page
