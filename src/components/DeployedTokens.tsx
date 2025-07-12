@@ -429,6 +429,13 @@ export const DeployedTokens: React.FC = () => {
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
+                    <button
+                      onClick={() => window.location.href = `/manage/${token.contractAddress}`}
+                      className="p-2 text-gray-400 hover:text-white transition-colors"
+                      title="Manage Token"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
                     <button className="p-2 text-gray-400 hover:text-white transition-colors">
                       <MoreVertical className="w-4 h-4" />
                     </button>

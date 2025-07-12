@@ -129,6 +129,20 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">Manage Token</h3>
+            <p className="text-gray-300 text-sm mb-4">
+              Access token management features like minting, burning, and fee configuration
+            </p>
+            <button
+              onClick={() => window.location.href = `/manage/${result.contractAddress}`}
+              className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 w-full justify-center"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Manage Token</span>
+            </button>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <h3 className="text-lg font-semibold text-white mb-4">Share Contract</h3>
             <p className="text-gray-300 text-sm mb-4">
               Share your token contract with others

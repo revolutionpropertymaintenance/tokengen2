@@ -9,6 +9,7 @@ import { MySales } from './components/MySales';
 import { DeployedTokens } from './components/DeployedTokens';
 import { SaleRouter } from './components/SaleRouter';
 import { SaleExplorer } from './components/SaleExplorer';
+import { TokenManagement } from './components/TokenManagement';
 import { TokenConfig, DeploymentResult, Step } from './types';
 
 declare global {
@@ -18,7 +19,7 @@ declare global {
 }
 
 function App() {
-  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore'>('landing');
+  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
 
@@ -143,6 +144,9 @@ function App() {
     
     case 'explore':
       return <SaleExplorer />;
+    
+    case 'manage':
+      return <TokenManagement />;
     
     default:
       return (
