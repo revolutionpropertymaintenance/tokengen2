@@ -135,11 +135,7 @@ export const DeployedTokens: React.FC = () => {
   };
 
   const statsSummary = getTokenStatsSummary();
-      }
-    } catch (error) {
-      console.error('Error fetching token statistics:', error);
-    }
-  };
+
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(type);
