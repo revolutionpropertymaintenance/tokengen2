@@ -1,6 +1,10 @@
 // ESR Token Configuration
 export const ESR_TOKEN_ADDRESS = import.meta.env.VITE_ESR_TOKEN_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C';
 
+// Mode Configuration
+export const MODE_STORAGE_KEY = 'tokenforge-network-mode';
+export const DEFAULT_MODE = 'mainnet'; // 'mainnet' or 'testnet'
+
 // Platform Configuration
 export const PLATFORM_WALLET = '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'; // Platform wallet for receiving ESR tokens
 
@@ -24,7 +28,7 @@ export const UI_CONFIG = {
 // Feature Flags
 export const FEATURES = {
   ENABLE_TESTNET_MODE: true,
-  ENABLE_TOKEN_DEDUCTION: true,
+  ENABLE_TOKEN_DEDUCTION: true, 
   ENABLE_CONTRACT_VERIFICATION: true,
   ENABLE_DEPLOYMENT_HISTORY: true
 };

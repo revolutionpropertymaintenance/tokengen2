@@ -1,6 +1,7 @@
 import React from 'react';
 import { Wallet, LogOut, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
+import { NetworkModeToggle } from './NetworkModeToggle';
 
 export const WalletConnection: React.FC = () => {
   const { isConnected, address, balance, chainId, connectWallet, disconnectWallet, isConnecting, error } = useWallet();
@@ -32,6 +33,7 @@ export const WalletConnection: React.FC = () => {
   if (isConnected) {
     return (
       <div className="flex items-center space-x-4">
+        <NetworkModeToggle />
         <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
           <div className="flex items-center space-x-2">
             <Wallet className="w-4 h-4 text-blue-300" />
@@ -79,22 +81,25 @@ export const WalletConnection: React.FC = () => {
   }
 
   return (
-    <button
-      onClick={connectWallet}
-      disabled={isConnecting}
-      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 disabled:opacity-50"
-    >
-      {isConnecting ? (
-        <div className="flex items-center space-x-2 px-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Connecting...</span>
-        </div>
-      ) : (
-        <div className="flex items-center space-x-2">
-          <Wallet className="w-4 h-4" />
-          <span>Connect Wallet</span>
-        </div>
-      )}
-    </button>
+    <div className="flex items-center space-x-4">
+      <NetworkModeToggle />
+      <button
+        onClick={connectWallet}
+        disabled={isConnecting}
+        className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 disabled:opacity-50"
+      >
+        {isConnecting ? (
+          <div className="flex items-center space-x-2 px-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Connecting...</span>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <Wallet className="w-4 h-4" />
+            <span>Connect Wallet</span>
+          </div>
+        )}
+      </button>
+    </div>
   );
 };
