@@ -1,4 +1,5 @@
 import { Network } from '../types';
+import { SELF_HOSTED_RPC } from '../config/constants';
 
 export const mainnets: Network[] = [
   {
@@ -6,7 +7,7 @@ export const mainnets: Network[] = [
     name: 'Ethereum',
     symbol: 'ETH',
     chainId: 1,
-    rpcUrl: 'https://mainnet.infura.io/v3/',
+    rpcUrl: SELF_HOSTED_RPC[1],
     explorerUrl: 'https://etherscan.io',
     gasPrice: '0.015 ETH (~$35)'
   },
@@ -15,7 +16,7 @@ export const mainnets: Network[] = [
     name: 'Binance Smart Chain',
     symbol: 'BNB',
     chainId: 56,
-    rpcUrl: 'https://bsc-dataseed.binance.org/',
+    rpcUrl: SELF_HOSTED_RPC[56],
     explorerUrl: 'https://bscscan.com',
     gasPrice: '0.003 BNB (~$2)'
   },
@@ -24,7 +25,7 @@ export const mainnets: Network[] = [
     name: 'Polygon',
     symbol: 'MATIC',
     chainId: 137,
-    rpcUrl: 'https://polygon-rpc.com/',
+    rpcUrl: SELF_HOSTED_RPC[137],
     explorerUrl: 'https://polygonscan.com',
     gasPrice: '0.01 MATIC (~$0.01)'
   },
@@ -33,7 +34,7 @@ export const mainnets: Network[] = [
     name: 'Arbitrum',
     symbol: 'ETH',
     chainId: 42161,
-    rpcUrl: 'https://arb1.arbitrum.io/rpc',
+    rpcUrl: SELF_HOSTED_RPC[42161],
     explorerUrl: 'https://arbiscan.io',
     gasPrice: '0.0001 ETH (~$0.25)'
   },
@@ -42,7 +43,7 @@ export const mainnets: Network[] = [
     name: 'Fantom',
     symbol: 'FTM',
     chainId: 250,
-    rpcUrl: 'https://rpc.ftm.tools/',
+    rpcUrl: SELF_HOSTED_RPC[250],
     explorerUrl: 'https://ftmscan.com',
     gasPrice: '0.5 FTM (~$0.15)'
   },
@@ -51,7 +52,7 @@ export const mainnets: Network[] = [
     name: 'Avalanche',
     symbol: 'AVAX',
     chainId: 43114,
-    rpcUrl: 'https://api.avax.network/ext/bc/C/rpc',
+    rpcUrl: SELF_HOSTED_RPC[43114],
     explorerUrl: 'https://snowtrace.io',
     gasPrice: '0.025 AVAX (~$0.75)'
   }
@@ -63,7 +64,7 @@ export const testnets: Network[] = [
     name: 'Estar Testnet',
     symbol: 'ESR',
     chainId: 25062019,
-    rpcUrl: 'https://testnet.rpc.esrscan.com',
+    rpcUrl: SELF_HOSTED_RPC[25062019],
     explorerUrl: 'https://esrscan.com',
     gasPrice: '0.001 ESR (~$0.00)'
   },
@@ -72,7 +73,7 @@ export const testnets: Network[] = [
     name: 'Ethereum Goerli',
     symbol: 'ETH',
     chainId: 5,
-    rpcUrl: 'https://goerli.infura.io/v3/',
+    rpcUrl: SELF_HOSTED_RPC[5],
     explorerUrl: 'https://goerli.etherscan.io',
     gasPrice: '0.001 ETH (~$0.00)'
   },
@@ -81,7 +82,7 @@ export const testnets: Network[] = [
     name: 'BSC Testnet',
     symbol: 'tBNB',
     chainId: 97,
-    rpcUrl: 'https://data-seed-prebsc-1-s1.binance.org:8545/',
+    rpcUrl: SELF_HOSTED_RPC[97],
     explorerUrl: 'https://testnet.bscscan.com',
     gasPrice: '0.001 tBNB (~$0.00)'
   },
@@ -90,7 +91,7 @@ export const testnets: Network[] = [
     name: 'Polygon Mumbai',
     symbol: 'MATIC',
     chainId: 80001,
-    rpcUrl: 'https://rpc-mumbai.maticvigil.com/',
+    rpcUrl: SELF_HOSTED_RPC[80001],
     explorerUrl: 'https://mumbai.polygonscan.com',
     gasPrice: '0.001 MATIC (~$0.00)'
   },
@@ -99,7 +100,7 @@ export const testnets: Network[] = [
     name: 'Arbitrum Sepolia',
     symbol: 'ETH',
     chainId: 421614,
-    rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
+    rpcUrl: SELF_HOSTED_RPC[421614],
     explorerUrl: 'https://sepolia.arbiscan.io',
     gasPrice: '0.0001 ETH (~$0.00)'
   }
