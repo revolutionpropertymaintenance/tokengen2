@@ -848,6 +848,40 @@ The platform is now ready for production use with proper security, error handlin
 
 ## Usage
 
+## Recent Updates
+
+We've made significant improvements to the TokenForge platform to enhance its functionality and user experience:
+
+### MetaMask Chain Integration
+
+- **Full Chain Support**: Added comprehensive support for 6 mainnets (Ethereum, BSC, Polygon, Arbitrum, Avalanche, ESR) and 6 testnets (Goerli, BSC Testnet, Mumbai, Avalanche Fuji, Fantom Testnet, ESR Testnet)
+- **Automatic Network Detection**: DApp now detects wallet's chain ID and prompts appropriate actions
+- **Network Addition**: Automatically adds networks to MetaMask using `wallet_addEthereumChain` when needed
+- **Chain Switching**: Seamlessly switches between networks using `wallet_switchEthereumChain`
+- **Network Mismatch Modal**: User-friendly modal for handling network mismatches
+- **Visual Chain Status**: Added status indicators showing current chain and compatibility with selected mode
+
+### Vesting System Enhancements
+
+- **Complete Vesting Implementation**: Fully functional token vesting system with linear release schedules
+- **Multiple Allocation Categories**: Support for team, marketing, development, and other vesting allocations
+- **Visual Timeline**: Interactive timeline representation of vesting schedules
+- **Vesting Management**: Post-deployment management interface for vesting schedules
+- **Presale Vesting**: Integrated vesting capabilities in presale contracts
+
+### Production Readiness Improvements
+
+- **Real-time Price Feeds**: Replaced static token price estimates with dynamic price feeds
+- **Robust Error Handling**: Improved error handling with proper messages and retry mechanisms
+- **Enhanced Security**: Strengthened security middleware with better CORS and CSP configuration
+- **Improved Authentication**: More robust wallet-based authentication system
+- **Contract Verification**: Enhanced contract verification with retry mechanisms
+- **Database Reliability**: Added connection pooling and health checks for database connections
+- **Better UI Components**: Added proper loading states and 404 page for improved user experience
+- **MetaMask Token Integration**: One-click token addition to MetaMask after deployment
+- **Production-Ready Encryption**: Improved encryption utilities with environment awareness
+- **Comprehensive Validation**: Enhanced input validation with detailed error messages
+
 ### Prerequisites
 
 Before using TokenForge, ensure you have:
