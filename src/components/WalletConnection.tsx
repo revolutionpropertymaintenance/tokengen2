@@ -1,6 +1,7 @@
 import React from 'react';
 import { Wallet, LogOut, Loader2 } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
+import { web3Service } from '../services/web3Service';
 
 export const WalletConnection: React.FC = () => {
   const { isConnected, address, balance, connectWallet, disconnectWallet, isConnecting } = useWallet();

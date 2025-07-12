@@ -18,126 +18,72 @@ import {
 } from 'lucide-react';
 import { PresaleConfig } from '../types/presale';
 import { networks } from '../data/networks';
+import { contractService } from '../services/contractService';
 
 export const MySales: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'upcoming' | 'live' | 'ended'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'raised'>('date');
 
-  // Mock sales data
-  const [sales] = useState<PresaleConfig[]>([
-    {
-      id: '1',
-      saleType: 'presale',
-      tokenInfo: {
-        tokenAddress: '0x1234567890abcdef1234567890abcdef12345678',
-        tokenName: 'My Awesome Token',
-        tokenSymbol: 'MAT',
-        maxSupply: '1000000',
-        allocatedAmount: '250000'
-      },
-      saleConfiguration: {
-        saleName: 'MAT Public Presale',
-        softCap: '10',
-        hardCap: '100',
-        tokenPrice: '1000',
-        minPurchase: '0.1',
-        maxPurchase: '10',
-        startDate: '2024-02-01T10:00:00Z',
-        endDate: '2024-02-15T10:00:00Z',
-        whitelistEnabled: false
-      },
-      vestingConfig: {
-        enabled: true,
-        duration: 90,
-        initialRelease: 25
-      },
-      walletSetup: {
-        saleReceiver: '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C',
-        refundWallet: '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'
-      },
-      network: networks.find(n => n.id === 'ethereum')!,
-      status: 'live',
-      contractAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
-      totalRaised: '45.5',
-      participantCount: 127,
-      createdAt: '2024-01-25T08:30:00Z'
-    },
-    {
-      id: '2',
-      saleType: 'private',
-      tokenInfo: {
-        tokenAddress: '0x9876543210fedcba9876543210fedcba98765432',
-        tokenName: 'Test Token',
-        tokenSymbol: 'TEST',
-        maxSupply: '500000',
-        allocatedAmount: '100000'
-      },
-      saleConfiguration: {
-        saleName: 'TEST Private Sale',
-        softCap: '5',
-        hardCap: '50',
-        tokenPrice: '2000',
-        minPurchase: '1',
-        maxPurchase: '25',
-        startDate: '2024-01-20T15:00:00Z',
-        endDate: '2024-01-30T15:00:00Z',
-        whitelistEnabled: true
-      },
-      vestingConfig: {
-        enabled: false,
-        duration: 0,
-        initialRelease: 100
-      },
-      walletSetup: {
-        saleReceiver: '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C',
-        refundWallet: '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'
-      },
-      network: networks.find(n => n.id === 'bsc')!,
-      status: 'ended',
-      contractAddress: '0x123456789abcdef123456789abcdef123456789a',
-      totalRaised: '50.0',
-      participantCount: 23,
-      createdAt: '2024-01-15T12:00:00Z'
-    },
-    {
-      id: '3',
-      saleType: 'presale',
-      tokenInfo: {
-        tokenAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
-        tokenName: 'Community Coin',
-        tokenSymbol: 'COMM',
-        maxSupply: '2000000',
-        allocatedAmount: '500000'
-      },
-      saleConfiguration: {
-        saleName: 'COMM Community Presale',
-        softCap: '20',
-        hardCap: '200',
-        tokenPrice: '500',
-        minPurchase: '0.5',
-        maxPurchase: '20',
-        startDate: '2024-02-20T12:00:00Z',
-        endDate: '2024-03-05T12:00:00Z',
-        whitelistEnabled: false
-      },
-      vestingConfig: {
-        enabled: true,
-        duration: 180,
-        initialRelease: 10
-      },
-      walletSetup: {
-        saleReceiver: '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C',
-        refundWallet: '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'
-      },
-      network: networks.find(n => n.id === 'polygon')!,
-      status: 'upcoming',
-      contractAddress: '0xfedcba9876543210fedcba9876543210fedcba98',
-      totalRaised: '0',
-      participantCount: 0,
-      createdAt: '2024-01-28T16:45:00Z'
-    }
-  ]);
+  // State for sales data
+  const [sales, setSales] = useState<PresaleConfig[]>([]);
+  
+  // Load sales data from contractService
+  useEffect(() => {
+    const loadSales = async () => {
+      try {
+        // Get deployed presales from contractService
+        const presales = contractService.getDeployedPresales();
+        
+        // Map to PresaleConfig interface
+        const mappedSales: PresaleConfig[] = presales.map((sale: any, index: number) => {
+          return {
+            id: (index + 1).toString(),
+            saleType: sale.saleType || 'presale',
+            tokenInfo: {
+              tokenAddress: sale.tokenAddress,
+              tokenName: sale.tokenName,
+              tokenSymbol: sale.tokenSymbol,
+              maxSupply: '0',
+              allocatedAmount: '0'
+            },
+            saleConfiguration: {
+              saleName: sale.saleName,
+              softCap: '10',
+              hardCap: '100',
+              tokenPrice: '1000',
+              minPurchase: '0.1',
+              maxPurchase: '10',
+              startDate: new Date().toISOString(),
+              endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              whitelistEnabled: false
+            },
+            vestingConfig: {
+              enabled: false,
+              duration: 0,
+              initialRelease: 0
+            },
+            walletSetup: {
+              saleReceiver: '',
+              refundWallet: ''
+            },
+            network: networks.find(n => n.id === sale.network.id) || networks[0],
+            status: sale.status || 'upcoming',
+            contractAddress: sale.contractAddress,
+            totalRaised: '0',
+            participantCount: 0,
+            createdAt: new Date(sale.timestamp).toISOString()
+          };
+        });
+        
+        setSales(mappedSales);
+      } catch (error) {
+        console.error('Error loading sales:', error);
+      }
+    };
+    
+    loadSales();
+  }, []);
 
   const filteredSales = sales.filter(sale => {
     const matchesStatus = selectedStatus === 'all' || sale.status === selectedStatus;

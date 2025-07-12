@@ -11,6 +11,8 @@ import {
   Lock,
   Calendar
 } from 'lucide-react';
+import { useEffect } from 'react';
+import { contractService } from '../services/contractService';
 
 interface PublicSale {
   id: string;
@@ -39,63 +41,41 @@ export const SaleExplorer: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'raised' | 'participants'>('date');
 
   useEffect(() => {
-    // Mock sales data - in production, fetch from API or blockchain
-    const mockSales: PublicSale[] = [
-      {
-        id: '1',
-        contractAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
-        saleName: 'My Awesome Token Presale',
-        tokenName: 'My Awesome Token',
-        tokenSymbol: 'MAT',
-        saleType: 'presale',
-        status: 'live',
-        totalRaised: '45.5',
-        hardCap: '100',
-        participants: 127,
-        tokenPrice: '1000',
-        startDate: '2024-01-15T10:00:00Z',
-        endDate: '2024-02-15T10:00:00Z',
-        network: 'Ethereum',
-        networkSymbol: 'ETH'
-      },
-      {
-        id: '2',
-        contractAddress: '0x123456789abcdef123456789abcdef123456789a',
-        saleName: 'Test Token Private Sale',
-        tokenName: 'Test Token',
-        tokenSymbol: 'TEST',
-        saleType: 'private',
-        status: 'ended',
-        totalRaised: '50.0',
-        hardCap: '50',
-        participants: 23,
-        tokenPrice: '2000',
-        startDate: '2024-01-01T15:00:00Z',
-        endDate: '2024-01-30T15:00:00Z',
-        network: 'BSC',
-        networkSymbol: 'BNB'
-      },
-      {
-        id: '3',
-        contractAddress: '0xfedcba9876543210fedcba9876543210fedcba98',
-        saleName: 'Community Coin Presale',
-        tokenName: 'Community Coin',
-        tokenSymbol: 'COMM',
-        saleType: 'presale',
-        status: 'upcoming',
-        totalRaised: '0',
-        hardCap: '200',
-        participants: 0,
-        tokenPrice: '500',
-        startDate: '2024-02-20T12:00:00Z',
-        endDate: '2024-03-05T12:00:00Z',
-        network: 'Polygon',
-        networkSymbol: 'MATIC'
+    // Load sales data from contractService
+    const loadSales = async () => {
+      try {
+        // Get deployed presales from contractService
+        const presales = contractService.getDeployedPresales();
+        
+        // Map to PublicSale interface
+        const mappedSales: PublicSale[] = presales.map((sale: any, index: number) => {
+          return {
+            id: (index + 1).toString(),
+            contractAddress: sale.contractAddress,
+            saleName: sale.saleName || `${sale.tokenSymbol} Sale`,
+            tokenName: sale.tokenName,
+            tokenSymbol: sale.tokenSymbol,
+            saleType: sale.saleType || 'presale',
+            status: sale.status || 'upcoming',
+            totalRaised: '0',
+            hardCap: '100',
+            participants: 0,
+            tokenPrice: '1000',
+            startDate: new Date().toISOString(),
+            endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            network: sale.network.name,
+            networkSymbol: sale.network.symbol
+          };
+        });
+        
+        setSales(mappedSales);
+        setFilteredSales(mappedSales);
+      } catch (error) {
+        console.error('Error loading sales:', error);
       }
-    ];
+    };
     
-    setSales(mockSales);
-    setFilteredSales(mockSales);
+    loadSales();
   }, []);
 
   useEffect(() => {

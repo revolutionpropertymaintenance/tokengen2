@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Clock, DollarSign, Users, Shield } from 'lucide-react';
 import { PresaleConfig, PresaleDeploymentResult } from '../../types/presale';
 import { ESRBalanceCheck } from '../ESRBalanceCheck';
+import { contractService } from '../../services/contractService';
 
 interface PresaleReviewStepProps {
   config: PresaleConfig;
@@ -13,27 +14,31 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
   const [isDeploying, setIsDeploying] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [hasEnoughESR, setHasEnoughESR] = useState(false);
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
 
   const handleDeploy = async () => {
     if (!agreed || !hasEnoughESR) return;
     
     setIsDeploying(true);
+    setDeploymentError(null);
     
-    // Simulate deployment process
-    await new Promise(resolve => setTimeout(resolve, 4000));
-    
-    // Mock deployment result
-    const result: PresaleDeploymentResult = {
-      contractAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
-      transactionHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      network: config.network,
-      explorerUrl: `${config.network.explorerUrl}/address/0xabcdef1234567890abcdef1234567890abcdef12`,
-      gasUsed: '2,345,678',
-      deploymentCost: '0.045',
-      salePageUrl: `https://tokenforge.app/sale/${config.id || 'new-sale'}`
-    };
-    
-    onDeploy(result);
+    try {
+      // Deploy presale contract using contractService
+      const deploymentResult = await contractService.deployPresale(config);
+      
+      // Add sale page URL to result
+      const result: PresaleDeploymentResult = {
+        ...deploymentResult,
+        salePageUrl: `${window.location.origin}/sale/${deploymentResult.contractAddress}`
+      };
+      
+      onDeploy(result);
+    } catch (error) {
+      console.error('Deployment failed:', error);
+      setDeploymentError((error as Error).message);
+    } finally {
+      setIsDeploying(false);
+    }
   };
 
   const estimatedGas = {

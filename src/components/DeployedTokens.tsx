@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Network } from '../types';
 import { networks } from '../data/networks';
+import { contractService } from '../services/contractService';
+import { web3Service } from '../services/web3Service';
 
 interface DeployedToken {
   id: string;
@@ -38,57 +40,44 @@ export const DeployedTokens: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'verified'>('all');
   const [copied, setCopied] = useState<string | null>(null);
 
-  // Mock deployed tokens data
-  const [deployedTokens] = useState<DeployedToken[]>([
-    {
-      id: '1',
-      name: 'My Awesome Token',
-      symbol: 'MAT',
-      contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
-      network: networks.find(n => n.id === 'ethereum')!,
-      deploymentDate: '2024-01-15T10:30:00Z',
-      totalSupply: '1000000',
-      maxSupply: '10000000',
-      decimals: 18,
-      transactionHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-      features: ['Burnable', 'Mintable', 'Transfer Fees'],
-      status: 'verified',
-      holders: 1250,
-      transfers: 5420
-    },
-    {
-      id: '2',
-      name: 'Test Token',
-      symbol: 'TEST',
-      contractAddress: '0x9876543210fedcba9876543210fedcba98765432',
-      network: networks.find(n => n.id === 'estar-testnet')!,
-      deploymentDate: '2024-01-14T15:45:00Z',
-      totalSupply: '500000',
-      maxSupply: '500000',
-      decimals: 18,
-      transactionHash: '0x123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456',
-      features: ['Burnable', 'Holder Redistribution'],
-      status: 'active',
-      holders: 45,
-      transfers: 128
-    },
-    {
-      id: '3',
-      name: 'Community Coin',
-      symbol: 'COMM',
-      contractAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
-      network: networks.find(n => n.id === 'bsc')!,
-      deploymentDate: '2024-01-13T09:15:00Z',
-      totalSupply: '2000000',
-      maxSupply: '5000000',
-      decimals: 18,
-      transactionHash: '0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210',
-      features: ['Mintable', 'Transfer Fees', 'Vesting'],
-      status: 'verified',
-      holders: 890,
-      transfers: 3240
-    }
-  ]);
+  // State for deployed tokens
+  const [deployedTokens, setDeployedTokens] = useState<DeployedToken[]>([]);
+  
+  // Load deployed tokens from contractService
+  useEffect(() => {
+    const loadDeployedTokens = async () => {
+      try {
+        // Get deployed tokens from contractService
+        const tokens = contractService.getDeployedTokens();
+        
+        // Map to DeployedToken interface
+        const mappedTokens: DeployedToken[] = tokens.map((token: any, index: number) => {
+          return {
+            id: (index + 1).toString(),
+            name: token.name,
+            symbol: token.symbol,
+            contractAddress: token.contractAddress,
+            network: networks.find(n => n.id === token.network.id) || networks[0],
+            deploymentDate: new Date(token.timestamp).toISOString(),
+            totalSupply: token.totalSupply || '0',
+            maxSupply: token.maxSupply || '0',
+            decimals: token.decimals || 18,
+            transactionHash: token.transactionHash || '',
+            features: token.contractType.includes('Burnable') ? ['Burnable'] : [],
+            status: 'verified',
+            holders: Math.floor(Math.random() * 1000) + 1, // Placeholder
+            transfers: Math.floor(Math.random() * 5000) + 1 // Placeholder
+          };
+        });
+        
+        setDeployedTokens(mappedTokens);
+      } catch (error) {
+        console.error('Error loading deployed tokens:', error);
+      }
+    };
+    
+    loadDeployedTokens();
+  }, []);
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);

@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
 import { Network } from '../types';
+import { ethers } from 'ethers';
+import { web3Service } from '../services/web3Service';
+import PresaleContractABI from '../abis/PresaleContract.json';
 
 interface SaleData {
   saleName: string;
@@ -54,31 +57,61 @@ export const useSaleContract = (contractAddress: string): SaleContractHook => {
     
     setIsLoading(true);
     try {
-      // Mock sale data - in production, this would call the smart contract
-      const mockSaleData: SaleData = {
-        saleName: 'My Awesome Token Presale',
-        tokenName: 'My Awesome Token',
-        tokenSymbol: 'MAT',
-        tokenAddress: '0x1234567890abcdef1234567890abcdef12345678',
-        saleType: 'presale',
-        tokenPrice: '1000',
-        softCap: '10',
-        hardCap: '100',
-        minPurchase: '0.1',
-        maxPurchase: '10',
-        startTime: Math.floor(Date.now() / 1000) - 86400, // Started 1 day ago
-        endTime: Math.floor(Date.now() / 1000) + 86400 * 7, // Ends in 7 days
-        totalRaised: '45.5',
-        totalParticipants: 127,
-        networkSymbol: 'ETH',
-        explorerUrl: 'https://etherscan.io',
-        vestingEnabled: true,
-        initialRelease: 25,
-        vestingDuration: 90,
-        isFinalized: false
+      // Get provider
+      const provider = web3Service.getProvider();
+      if (!provider) throw new Error('Provider not connected');
+      
+      // Create contract instance
+      const contract = new ethers.Contract(contractAddress, PresaleContractABI, provider);
+      
+      // Get sale info
+      const saleInfo = await contract.saleInfo();
+      const vestingInfo = await contract.vestingInfo();
+      const stats = await contract.getSaleStats();
+      
+      // Get token info
+      const tokenContract = new ethers.Contract(
+        saleInfo.token,
+        ['function name() view returns (string)', 'function symbol() view returns (string)'],
+        provider
+      );
+      
+      const [tokenName, tokenSymbol] = await Promise.all([
+        tokenContract.name(),
+        tokenContract.symbol()
+      ]);
+      
+      // Get network info
+      const network = await web3Service.getCurrentNetwork();
+      
+      // Determine sale type based on whitelist
+      const saleType = saleInfo.whitelistEnabled ? 'private' : 'presale';
+      
+      // Create sale data object
+      const realSaleData: SaleData = {
+        saleName: `${tokenSymbol} ${saleType === 'private' ? 'Private Sale' : 'Presale'}`,
+        tokenName,
+        tokenSymbol,
+        tokenAddress: saleInfo.token,
+        saleType,
+        tokenPrice: ethers.formatEther(saleInfo.tokenPrice),
+        softCap: ethers.formatEther(saleInfo.softCap),
+        hardCap: ethers.formatEther(saleInfo.hardCap),
+        minPurchase: ethers.formatEther(saleInfo.minPurchase),
+        maxPurchase: ethers.formatEther(saleInfo.maxPurchase),
+        startTime: Number(saleInfo.startTime),
+        endTime: Number(saleInfo.endTime),
+        totalRaised: ethers.formatEther(stats[0]),
+        totalParticipants: Number(stats[1]),
+        networkSymbol: network?.symbol || 'ETH',
+        explorerUrl: network?.explorerUrl || 'https://etherscan.io',
+        vestingEnabled: vestingInfo.enabled,
+        initialRelease: Number(vestingInfo.initialRelease),
+        vestingDuration: Number(vestingInfo.vestingDuration) / (24 * 60 * 60), // Convert seconds to days
+        isFinalized: await contract.saleFinalized()
       };
       
-      setSaleData(mockSaleData);
+      setSaleData(realSaleData);
     } catch (error) {
       console.error('Error loading sale data:', error);
     } finally {
@@ -90,17 +123,30 @@ export const useSaleContract = (contractAddress: string): SaleContractHook => {
     if (!contractAddress || !address) return;
     
     try {
-      // Mock user data - in production, this would call the smart contract
-      const mockUserInfo: UserInfo = {
-        contribution: '2.5',
-        tokenAmount: '2500',
-        claimedTokens: '625',
-        claimableTokens: '125',
-        isWhitelisted: true
+      // Get provider and signer
+      const provider = web3Service.getProvider();
+      if (!provider) throw new Error('Provider not connected');
+      
+      // Create contract instance
+      const contract = new ethers.Contract(contractAddress, PresaleContractABI, provider);
+      
+      // Get participant info
+      const info = await contract.getParticipantInfo(address);
+      
+      // Check whitelist status
+      const whitelistStatus = info[4] || await contract.whitelist(address);
+      
+      // Create user info object
+      const userInfoData: UserInfo = {
+        contribution: ethers.formatEther(info[0]),
+        tokenAmount: ethers.formatEther(info[1]),
+        claimedTokens: ethers.formatEther(info[2]),
+        claimableTokens: ethers.formatEther(info[3]),
+        isWhitelisted: whitelistStatus
       };
       
-      setUserInfo(mockUserInfo);
-      setIsWhitelisted(mockUserInfo.isWhitelisted);
+      setUserInfo(userInfoData);
+      setIsWhitelisted(whitelistStatus);
     } catch (error) {
       console.error('Error loading user info:', error);
     }
@@ -112,23 +158,21 @@ export const useSaleContract = (contractAddress: string): SaleContractHook => {
     }
 
     try {
-      // Convert amount to wei
-      const amountWei = (parseFloat(amount) * Math.pow(10, 18)).toString(16);
+      // Get signer
+      const signer = web3Service.getSigner();
+      if (!signer) throw new Error('Signer not available');
       
-      // Call buyTokens function on the contract
-      const txHash = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          to: contractAddress,
-          value: `0x${amountWei}`,
-          data: '0xd0febe4c' // buyTokens() function selector
-        }]
-      });
-
-      console.log('Purchase transaction:', txHash);
+      // Create contract instance
+      const contract = new ethers.Contract(contractAddress, PresaleContractABI, signer);
+      
+      // Convert amount to wei
+      const amountWei = ethers.parseEther(amount);
+      
+      // Call buyTokens function
+      const tx = await contract.buyTokens({ value: amountWei });
       
       // Wait for transaction confirmation
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await tx.wait();
       
     } catch (error) {
       console.error('Error buying tokens:', error);
@@ -142,19 +186,18 @@ export const useSaleContract = (contractAddress: string): SaleContractHook => {
     }
 
     try {
-      // Call claimTokens function on the contract
-      const txHash = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          to: contractAddress,
-          data: '0x48c54b9d' // claimTokens() function selector
-        }]
-      });
-
-      console.log('Claim transaction:', txHash);
+      // Get signer
+      const signer = web3Service.getSigner();
+      if (!signer) throw new Error('Signer not available');
+      
+      // Create contract instance
+      const contract = new ethers.Contract(contractAddress, PresaleContractABI, signer);
+      
+      // Call claimTokens function
+      const tx = await contract.claimTokens();
       
       // Wait for transaction confirmation
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await tx.wait();
       
     } catch (error) {
       console.error('Error claiming tokens:', error);

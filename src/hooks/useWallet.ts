@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { web3Service } from '../services/web3Service';
 
 interface WalletState {
   isConnected: boolean;
@@ -21,24 +22,20 @@ export const useWallet = () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         setIsConnecting(true);
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        });
+        // Connect using web3Service
+        const address = await web3Service.connect();
         
-        const chainId = await window.ethereum.request({
-          method: 'eth_chainId'
-        });
-
-        const balance = await window.ethereum.request({
-          method: 'eth_getBalance',
-          params: [accounts[0], 'latest']
-        });
-
+        // Get network info
+        const network = web3Service.getNetworkInfo();
+        
+        // Get balance
+        const balance = await web3Service.getBalance(address);
+        
         setWallet({
           isConnected: true,
-          address: accounts[0],
-          balance: (parseInt(balance, 16) / 1e18).toFixed(4),
-          chainId: parseInt(chainId, 16)
+          address: address,
+          balance: parseFloat(balance).toFixed(4),
+          chainId: network?.chainId || 0
         });
       } catch (error) {
         console.error('Error connecting wallet:', error);
@@ -51,6 +48,8 @@ export const useWallet = () => {
   };
 
   const disconnectWallet = () => {
+    // Disconnect web3Service
+    web3Service.disconnect();
     setWallet({
       isConnected: false,
       address: null,
@@ -63,6 +62,7 @@ export const useWallet = () => {
     if (typeof window.ethereum !== 'undefined') {
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
+          web3Service.disconnect();
           disconnectWallet();
         } else {
           setWallet(prev => ({
@@ -73,8 +73,14 @@ export const useWallet = () => {
       };
 
       const handleChainChanged = (chainId: string) => {
+        const numericChainId = parseInt(chainId, 16);
         setWallet(prev => ({
           ...prev,
+          chainId: numericChainId
+        }));
+        
+        // Refresh page on chain change to ensure all data is updated
+        window.location.reload();
           chainId: parseInt(chainId, 16)
         }));
       };

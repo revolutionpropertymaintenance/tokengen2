@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Network as NetworkIcon, Zap, Globe, Shield, Clock } from 'lucide-react';
 import { Network } from '../types';
 import { mainnets, testnets } from '../data/networks';
+import { web3Service } from '../services/web3Service';
 
 interface NetworkTabProps {
   selectedNetwork: Network;
@@ -26,6 +27,21 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
     const networks = tab === 'testnet' ? testnets : mainnets;
     if (networks.length > 0) {
       onNetworkSelect(networks[0]);
+    }
+  };
+  
+  // Handle network selection and switch network in wallet
+  const handleNetworkSelect = async (network: Network) => {
+    try {
+      // Switch network in wallet
+      await web3Service.switchNetwork(network);
+      
+      // Update selected network
+      onNetworkSelect(network);
+    } catch (error) {
+      console.error('Error switching network:', error);
+      // Still update UI even if wallet switch fails
+      onNetworkSelect(network);
     }
   };
 

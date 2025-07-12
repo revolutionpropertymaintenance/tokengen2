@@ -12,6 +12,7 @@
   "dependencies": {
     "@ethersproject/contracts": "^5.8.0",
     "@ethersproject/providers": "^5.8.0",
+    "@metamask/providers": "^14.0.2",
     "ethers": "^6.15.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",

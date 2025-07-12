@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Zap, Clock, Shield, Globe } from 'lucide-react';
 import { TokenConfig, DeploymentResult } from '../types';
 import { RemixFallback } from './RemixFallback';
+import { contractService } from '../services/contractService';
 import { vestingCategories } from '../data/vestingCategories';
 
 interface ReviewDeployProps {
@@ -14,6 +15,7 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
   const [isDeploying, setIsDeploying] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [deploymentFailed, setDeploymentFailed] = useState(false);
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
 
   const estimatedGas = {
     amount: '0.025',
@@ -24,29 +26,16 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     if (!agreed) return;
     
     setIsDeploying(true);
+    setDeploymentError(null);
     
     try {
-      // Simulate deployment process with potential failure
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Simulate random deployment failure for demo
-      if (Math.random() > 0.7) {
-        throw new Error('Deployment failed');
-      }
-      
-      // Mock successful deployment result
-      const result: DeploymentResult = {
-        contractAddress: '0x1234567890abcdef1234567890abcdef12345678',
-        transactionHash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-        network: config.network,
-        explorerUrl: `${config.network.explorerUrl}/token/0x1234567890abcdef1234567890abcdef12345678`,
-        gasUsed: '1,234,567',
-        deploymentCost: estimatedGas.amount
-      };
+      // Deploy token using contractService
+      const result = await contractService.deployToken(config);
       
       onDeploy(result);
     } catch (error) {
       console.error('Deployment failed:', error);
+      setDeploymentError((error as Error).message);
       setDeploymentFailed(true);
     } finally {
       setIsDeploying(false);
