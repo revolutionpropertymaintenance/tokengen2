@@ -2,7 +2,6 @@ import React from 'react';
 import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star } from 'lucide-react';
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
-import { useWallet } from '../hooks/useWallet';
 
 interface LandingPageProps {
   onGetStarted: () => void;
