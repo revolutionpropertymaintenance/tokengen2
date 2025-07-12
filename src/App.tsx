@@ -94,87 +94,75 @@ function App() {
           onViewTokens={handleViewTokens}
           onExploreSales={handleExploreSales}
         />
-        </ErrorBoundary>
       );
     
     case 'builder':
       return (
-        <ErrorBoundary>
         <TokenBuilder
           onBack={goBack}
           onNext={handleTokenConfigComplete}
           initialConfig={tokenConfig || undefined}
         />
-        </ErrorBoundary>
       );
     
     case 'vesting':
       return (
-        <ErrorBoundary>
         <VestingConfiguration
           config={tokenConfig!}
           onBack={goBack}
           onNext={handleVestingComplete}
         />
-        </ErrorBoundary>
       );
     
     case 'review':
       return (
-        <ErrorBoundary>
         <ReviewDeploy
           config={tokenConfig!}
           onBack={goBack}
           onDeploy={handleDeploy}
         />
-        </ErrorBoundary>
       );
     
     case 'success':
       return (
-        <ErrorBoundary>
         <DeploymentSuccess
           result={deploymentResult!}
           onStartNew={handleStartNew}
         />
-        </ErrorBoundary>
       );
     
     case 'presale':
       return (
-        <ErrorBoundary>
         <PresaleWizard
           onBack={() => setCurrentStep('landing')}
         />
-        </ErrorBoundary>
       );
     
     case 'sales':
-      return <ErrorBoundary><MySales /></ErrorBoundary>;
+      return <MySales />;
     
     case 'tokens':
-      return <ErrorBoundary><DeployedTokens /></ErrorBoundary>;
+      return <DeployedTokens />;
     
     case 'sale':
-      return <ErrorBoundary><SaleRouter /></ErrorBoundary>;
+      return <SaleRouter />;
     
     case 'explore':
-      return <ErrorBoundary><SaleExplorer /></ErrorBoundary>;
+      return <SaleExplorer />;
     
     case 'manage':
-      return <ErrorBoundary><TokenManagement /></ErrorBoundary>;
+      return <TokenManagement />;
     
     case '404':
-      return <ErrorBoundary><NotFound /></ErrorBoundary>;
+      return <NotFound />;
     
     default:
       // Check if this is a valid route
       const validRoutes = ['landing', 'builder', 'vesting', 'review', 'success', 'presale', 'sales', 'tokens', 'sale', 'explore', 'manage'];
       if (!validRoutes.includes(currentStep)) {
-        return <ErrorBoundary><NotFound /></ErrorBoundary>;
+        return <NotFound />;
       } else {
         return (
-          <ErrorBoundary>
           <LandingPage 
             onGetStarted={handleGetStarted}
             onLaunchSale={handleLaunchSale}
@@ -182,7 +170,6 @@ function App() {
             onViewTokens={handleViewTokens}
             onExploreSales={handleExploreSales}
           />
-          </ErrorBoundary>
         );
       }
   }
