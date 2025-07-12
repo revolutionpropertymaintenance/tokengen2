@@ -31,18 +31,23 @@ export const TokenInfoStep: React.FC<TokenInfoStepProps> = ({ config, onNext, on
     const loadDeployedTokens = async () => {
       try {
         setIsLoading(true);
+        
+        // Fetch real deployed tokens from the API
         const tokens = await contractService.getDeployedTokens();
         
+        // Map API response to DeployedToken interface
         const mappedTokens: DeployedToken[] = tokens.map((token: any) => ({
           address: token.contractAddress,
           name: token.name,
           symbol: token.symbol,
-          maxSupply: token.maxSupply || token.totalSupply || '0',
-          network: token.network,
+          maxSupply: token.maxSupply || token.totalSupply || '1000000',
+          network: token.network?.name || 'Unknown',
           deploymentDate: token.timestamp
         }));
         
         setDeployedTokens(mappedTokens);
+        
+        console.log(`Loaded ${mappedTokens.length} deployed tokens`);
       } catch (error) {
         console.error('Error loading deployed tokens:', error);
         setDeployedTokens([]);
@@ -53,6 +58,32 @@ export const TokenInfoStep: React.FC<TokenInfoStepProps> = ({ config, onNext, on
     
     loadDeployedTokens();
   }, []);
+
+  // Auto-refresh token list periodically
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const tokens = await contractService.getDeployedTokens();
+        const mappedTokens: DeployedToken[] = tokens.map((token: any) => ({
+          address: token.contractAddress,
+          name: token.name,
+          symbol: token.symbol,
+          maxSupply: token.maxSupply || token.totalSupply || '1000000',
+          network: token.network?.name || 'Unknown',
+          deploymentDate: token.timestamp
+        }));
+        
+        // Only update if the list has changed
+        if (mappedTokens.length !== deployedTokens.length) {
+          setDeployedTokens(mappedTokens);
+        }
+      } catch (error) {
+        console.error('Error refreshing token list:', error);
+      }
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [deployedTokens.length]);
 
   useEffect(() => {
     if (config.tokenInfo.tokenAddress) {
@@ -99,6 +130,26 @@ export const TokenInfoStep: React.FC<TokenInfoStepProps> = ({ config, onNext, on
           allocatedAmount
         }
       });
+    }
+  };
+
+  const refreshTokenList = async () => {
+    setIsLoading(true);
+    try {
+      const tokens = await contractService.getDeployedTokens();
+      const mappedTokens: DeployedToken[] = tokens.map((token: any) => ({
+        address: token.contractAddress,
+        name: token.name,
+        symbol: token.symbol,
+        maxSupply: token.maxSupply || token.totalSupply || '1000000',
+        network: token.network?.name || 'Unknown',
+        deploymentDate: token.timestamp
+      }));
+      setDeployedTokens(mappedTokens);
+    } catch (error) {
+      console.error('Error refreshing tokens:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

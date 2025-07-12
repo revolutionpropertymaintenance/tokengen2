@@ -32,20 +32,25 @@ export const MySales: React.FC = () => {
   useEffect(() => {
     const loadSales = async () => {
       try {
-        // Get deployed presales from contractService
-        const presales = contractService.getDeployedPresales();
+        // Get deployed presales from API
+        const presales = await contractService.getDeployedPresales();
         
         // Map to PresaleConfig interface
         const mappedSales: PresaleConfig[] = presales.map((sale: any, index: number) => {
-          // Calculate status based on dates
+          // Calculate real status based on current time vs sale dates
           const now = new Date();
-          const startDate = new Date(sale.presaleConfig?.saleConfiguration?.startDate || now);
-          const endDate = new Date(sale.presaleConfig?.saleConfiguration?.endDate || now);
+          const startDate = new Date(sale.presaleConfig?.saleConfiguration?.startDate || Date.now() + 86400000);
+          const endDate = new Date(sale.presaleConfig?.saleConfiguration?.endDate || Date.now() + 14 * 86400000);
           
           let status: 'upcoming' | 'live' | 'ended' = 'upcoming';
           if (now >= startDate && now <= endDate) {
             status = 'live';
           } else if (now > endDate) {
+            status = 'ended';
+          }
+
+          // Check if sale is finalized (this would come from contract state)
+          if (sale.isFinalized) {
             status = 'ended';
           }
           
@@ -82,8 +87,8 @@ export const MySales: React.FC = () => {
             network: networks.find(n => n.id === sale.network.id) || networks[0],
             status: status,
             contractAddress: sale.contractAddress,
-            totalRaised: sale.totalRaised || '0',
-            participantCount: sale.participantCount || 0,
+            totalRaised: '0', // Will be updated by fetchSaleStatistics
+            participantCount: 0, // Will be updated by fetchSaleStatistics
             createdAt: new Date(sale.timestamp).toISOString()
           };
         });
@@ -102,20 +107,18 @@ export const MySales: React.FC = () => {
 
   const fetchSaleStatistics = async (sales: PresaleConfig[]) => {
     try {
-      // Fetch real-time data from presale contracts
+      // Fetch real-time statistics from presale contracts in parallel
       const updatedSales = await Promise.all(
         sales.map(async (sale) => {
           try {
             if (sale.contractAddress) {
-              const response = await fetch(`/api/contracts/presale/${sale.contractAddress}/stats`);
-              if (response.ok) {
-                const stats = await response.json();
-                return {
-                  ...sale,
-                  totalRaised: stats.totalRaised || sale.totalRaised,
-                  participantCount: stats.participantCount || sale.participantCount
-                };
-              }
+              const stats = await contractService.getSaleStatistics(sale.contractAddress);
+              return {
+                ...sale,
+                totalRaised: stats.totalRaised,
+                participantCount: stats.participantCount,
+                status: stats.status
+              };
             }
             return sale;
           } catch (error) {
@@ -129,6 +132,44 @@ export const MySales: React.FC = () => {
     } catch (error) {
       console.error('Error fetching sale statistics:', error);
     }
+  };
+
+  // Refresh statistics periodically for live sales
+  useEffect(() => {
+    if (sales.length > 0) {
+      const interval = setInterval(() => {
+        const liveSales = sales.filter(sale => sale.status === 'live');
+        if (liveSales.length > 0) {
+          fetchSaleStatistics(sales);
+        }
+      }, 15000); // Refresh every 15 seconds for live sales
+      
+      return () => clearInterval(interval);
+    }
+  }, [sales]);
+
+  const refreshSaleData = async () => {
+    if (sales.length > 0) {
+      await fetchSaleStatistics(sales);
+    }
+  };
+
+  const getSaleStats = () => {
+    const totalSales = sales.length;
+    const liveSales = sales.filter(s => s.status === 'live').length;
+    const upcomingSales = sales.filter(s => s.status === 'upcoming').length;
+    const endedSales = sales.filter(s => s.status === 'ended').length;
+    const totalRaised = sales.reduce((sum, sale) => sum + parseFloat(sale.totalRaised || '0'), 0);
+    const totalParticipants = sales.reduce((sum, sale) => sum + (sale.participantCount || 0), 0);
+
+    return { 
+      totalSales, 
+      liveSales, 
+      upcomingSales,
+      endedSales,
+      totalRaised, 
+      totalParticipants 
+    };
   };
   const filteredSales = sales.filter(sale => {
     const matchesStatus = selectedStatus === 'all' || sale.status === selectedStatus;

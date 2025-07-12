@@ -113,6 +113,63 @@ router.get('/:address', authenticate, (req, res) => {
   }
 });
 
+// Get token statistics from blockchain
+router.get('/:address/stats', authenticate, async (req, res) => {
+  try {
+    const { address } = req.params;
+    const userId = req.user.id;
+    
+    // Verify the contract belongs to the user
+    const deploymentsDir = path.join(__dirname, '..', '..', 'deployments');
+    let contractFound = false;
+    
+    if (fs.existsSync(deploymentsDir)) {
+      const files = fs.readdirSync(deploymentsDir);
+      
+      for (const file of files) {
+        if (file.includes(address.toLowerCase()) && file.endsWith('.json')) {
+          try {
+            const filePath = path.join(deploymentsDir, file);
+            const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            
+            if (deployment.deployer && deployment.deployer.toLowerCase() === userId.toLowerCase()) {
+              contractFound = true;
+              break;
+            }
+          } catch (error) {
+            console.error(`Error reading deployment file ${file}:`, error);
+          }
+        }
+      }
+    }
+    
+    if (!contractFound) {
+      return res.status(404).json({ error: 'Contract not found or access denied' });
+    }
+    
+    // TODO: Implement actual blockchain queries for token statistics
+    // This would involve:
+    // 1. Connecting to the appropriate blockchain network
+    // 2. Querying the token contract for holder count
+    // 3. Querying blockchain for transfer events
+    // 4. Calculating real statistics
+    
+    // For now, return structured response that can be easily replaced with real data
+    const stats = {
+      holders: 0, // await getTokenHolderCount(address, network)
+      transfers: 0, // await getTokenTransferCount(address, network)
+      totalSupply: '0', // await getTokenTotalSupply(address, network)
+      lastUpdated: new Date().toISOString()
+    };
+    
+    res.json(stats);
+    
+  } catch (error) {
+    console.error('Error fetching token statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch token statistics' });
+  }
+});
+
 // Get all public presales (for explorer)
 router.get('/presales/public', (req, res) => {
   try {
@@ -172,15 +229,67 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
     const { address } = req.params;
     const userId = req.user.id;
     
-    // In a real implementation, you would query the presale contract
-    // For now, return basic stats structure
-    res.json({
+    // Verify the presale contract belongs to the user
+    const deploymentsDir = path.join(__dirname, '..', '..', 'deployments');
+    let presaleFound = false;
+    let presaleConfig = null;
+    
+    if (fs.existsSync(deploymentsDir)) {
+      const files = fs.readdirSync(deploymentsDir);
+      
+      for (const file of files) {
+        if (file.includes(address.toLowerCase()) && file.includes('presale') && file.endsWith('.json')) {
+          try {
+            const filePath = path.join(deploymentsDir, file);
+            const deployment = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            
+            if (deployment.deployer && deployment.deployer.toLowerCase() === userId.toLowerCase()) {
+              presaleFound = true;
+              presaleConfig = deployment.presaleConfig;
+              break;
+            }
+          } catch (error) {
+            console.error(`Error reading presale deployment file ${file}:`, error);
+          }
+        }
+      }
+    }
+    
+    if (!presaleFound) {
+      return res.status(404).json({ error: 'Presale contract not found or access denied' });
+    }
+    
+    // Calculate status based on current time vs sale dates
+    let status = 'upcoming';
+    if (presaleConfig?.saleConfiguration) {
+      const now = new Date();
+      const startDate = new Date(presaleConfig.saleConfiguration.startDate);
+      const endDate = new Date(presaleConfig.saleConfiguration.endDate);
+      
+      if (now >= startDate && now <= endDate) {
+        status = 'live';
+      } else if (now > endDate) {
+        status = 'ended';
+      }
+    }
+    
+    // TODO: Implement actual presale contract queries
+    // This would involve:
+    // 1. Connecting to the blockchain network
+    // 2. Querying the presale contract for current statistics
+    // 3. Getting real-time data like totalRaised, participantCount, etc.
+    
+    const stats = {
       totalRaised: '0',
       participantCount: 0,
       totalTokensSold: '0',
       softCapReached: false,
-      hardCapReached: false
-    });
+      hardCapReached: false,
+      status: status,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    res.json(stats);
     
   } catch (error) {
     console.error('Error fetching presale stats:', error);

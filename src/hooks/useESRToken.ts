@@ -7,7 +7,9 @@ import { web3Service } from '../services/web3Service';
 const ESR_TOKEN_ABI = [
   'function balanceOf(address owner) view returns (uint256)',
   'function transfer(address to, uint256 amount) returns (bool)',
-  'function decimals() view returns (uint8)'
+  'function decimals() view returns (uint8)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)'
 ];
 
 interface ESRTokenHook {
@@ -40,14 +42,20 @@ export const useESRToken = (): ESRTokenHook => {
         throw new Error('Provider not available');
       }
       
+      // Create ESR token contract instance
       const esrContract = new ethers.Contract(ESR_TOKEN_ADDRESS, ESR_TOKEN_ABI, provider);
-      const [balance, decimals] = await Promise.all([
+      
+      // Get balance and decimals in parallel
+      const [balanceWei, decimals] = await Promise.all([
         esrContract.balanceOf(address),
         esrContract.decimals()
       ]);
       
-      const formattedBalance = parseFloat(ethers.formatUnits(balance, decimals));
+      // Format balance from wei to human readable
+      const formattedBalance = parseFloat(ethers.formatUnits(balanceWei, decimals));
       setBalance(formattedBalance);
+      
+      console.log(`ESR Balance for ${address}: ${formattedBalance} ESR`);
     } catch (error) {
       console.error('Error checking ESR balance:', error);
       setBalance(0);
@@ -71,18 +79,41 @@ export const useESRToken = (): ESRTokenHook => {
         throw new Error('Signer not available');
       }
       
+      // Create ESR token contract instance with signer
       const esrContract = new ethers.Contract(ESR_TOKEN_ADDRESS, ESR_TOKEN_ABI, signer);
+      
+      // Get token decimals
       const decimals = await esrContract.decimals();
+      
+      // Convert amount to wei
       const amountWei = ethers.parseUnits(amount.toString(), decimals);
+      
+      // Check current balance
+      const currentBalance = await esrContract.balanceOf(address);
+      if (currentBalance < amountWei) {
+        throw new Error(`Insufficient ESR balance. Required: ${amount} ESR, Available: ${ethers.formatUnits(currentBalance, decimals)} ESR`);
+      }
+      
+      console.log(`Transferring ${amount} ESR tokens to platform wallet...`);
       
       // Transfer ESR tokens to platform wallet
       const tx = await esrContract.transfer(PLATFORM_WALLET, amountWei);
-      await tx.wait();
       
-      // Update balance after successful transaction
-      setTimeout(() => {
-        checkBalance(address);
-      }, 2000);
+      console.log(`ESR transfer transaction sent: ${tx.hash}`);
+      
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      
+      if (receipt.status === 1) {
+        console.log(`ESR transfer confirmed in block ${receipt.blockNumber}`);
+        
+        // Update balance after successful transaction
+        setTimeout(() => {
+          checkBalance(address);
+        }, 2000);
+      } else {
+        throw new Error('ESR transfer transaction failed');
+      }
       
     } catch (error) {
       console.error('Error deducting ESR tokens:', error);

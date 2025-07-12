@@ -47,8 +47,8 @@ export const DeployedTokens: React.FC = () => {
   useEffect(() => {
     const loadDeployedTokens = async () => {
       try {
-        // Get deployed tokens from contractService
-        const tokens = contractService.getDeployedTokens();
+        // Get deployed tokens from API
+        const tokens = await contractService.getDeployedTokens();
         
         // Map to DeployedToken interface
         const mappedTokens: DeployedToken[] = tokens.map((token: any, index: number) => {
@@ -65,14 +65,14 @@ export const DeployedTokens: React.FC = () => {
             transactionHash: token.transactionHash || '',
             features: token.contractType.includes('Burnable') ? ['Burnable'] : [],
             status: 'verified',
-            holders: 0, // Will be fetched from blockchain if needed
-            transfers: 0 // Will be fetched from blockchain if needed
+            holders: 0, // Will be updated by fetchTokenStatistics
+            transfers: 0 // Will be updated by fetchTokenStatistics
           };
         });
         
         setDeployedTokens(mappedTokens);
         
-        // Optionally fetch real statistics for each token
+        // Fetch real statistics for each token
         await fetchTokenStatistics(mappedTokens);
       } catch (error) {
         console.error('Error loading deployed tokens:', error);
@@ -83,13 +83,58 @@ export const DeployedTokens: React.FC = () => {
   }, []);
 
   const fetchTokenStatistics = async (tokens: DeployedToken[]) => {
-    // This is optional - only implement if you need real statistics
-    // It requires additional blockchain queries which may be expensive
     try {
-      for (const token of tokens) {
-        // You could implement actual blockchain queries here
-        // const stats = await getTokenStatistics(token.contractAddress, token.network);
-        // Update token with real statistics
+      // Fetch statistics for all tokens in parallel
+      const updatedTokens = await Promise.all(
+        tokens.map(async (token) => {
+          try {
+            const stats = await contractService.getTokenStatistics(token.contractAddress, token.network);
+            return {
+              ...token,
+              holders: stats.holders,
+              transfers: stats.transfers,
+              totalSupply: stats.totalSupply || token.totalSupply
+            };
+          } catch (error) {
+            console.error(`Error fetching stats for token ${token.contractAddress}:`, error);
+            return token; // Return original token if stats fetch fails
+          }
+        })
+      );
+      
+      // Update state with real statistics
+      setDeployedTokens(updatedTokens);
+    } catch (error) {
+      console.error('Error fetching token statistics:', error);
+    }
+  };
+
+  // Refresh statistics periodically
+  useEffect(() => {
+    if (deployedTokens.length > 0) {
+      const interval = setInterval(() => {
+        fetchTokenStatistics(deployedTokens);
+      }, 30000); // Refresh every 30 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [deployedTokens.length]);
+
+  const refreshTokenData = async () => {
+    if (deployedTokens.length > 0) {
+      await fetchTokenStatistics(deployedTokens);
+    }
+  };
+
+  const getTokenStatsSummary = () => {
+    return {
+      totalHolders: deployedTokens.reduce((sum, token) => sum + token.holders, 0),
+      totalTransfers: deployedTokens.reduce((sum, token) => sum + token.transfers, 0),
+      verifiedTokens: deployedTokens.filter(t => t.status === 'verified').length
+    };
+  };
+
+  const statsSummary = getTokenStatsSummary();
       }
     } catch (error) {
       console.error('Error fetching token statistics:', error);

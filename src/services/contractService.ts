@@ -202,7 +202,7 @@ export class ContractService {
     }
   }
 
-  async getDeployedTokens(): any[] {
+  async getDeployedTokens(): Promise<any[]> {
     try {
       const response = await fetch(`${this.apiUrl}/api/contracts/deployed`, {
         headers: this.getAuthHeaders(),
@@ -221,7 +221,7 @@ export class ContractService {
     }
   }
 
-  async getDeployedPresales(): any[] {
+  async getDeployedPresales(): Promise<any[]> {
     try {
       const response = await fetch(`${this.apiUrl}/api/contracts/deployed`, {
         headers: this.getAuthHeaders(),
@@ -240,7 +240,7 @@ export class ContractService {
     }
   }
 
-  async getPublicPresales(): any[] {
+  async getPublicPresales(): Promise<any[]> {
     try {
       const response = await fetch(`${this.apiUrl}/api/contracts/presales/public`);
 
@@ -294,6 +294,60 @@ export class ContractService {
     } catch (error) {
       console.error('Error deducting ESR tokens:', error);
       throw error;
+    }
+  }
+
+  // Real data fetching methods
+  async getTokenStatistics(contractAddress: string, network: Network): Promise<{
+    holders: number;
+    transfers: number;
+    totalSupply: string;
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/contracts/${contractAddress}/stats`, {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        // Return default values if API call fails
+        return { holders: 0, transfers: 0, totalSupply: '0' };
+      }
+
+      const data = await response.json();
+      return {
+        holders: data.holders || 0,
+        transfers: data.transfers || 0,
+        totalSupply: data.totalSupply || '0'
+      };
+    } catch (error) {
+      console.error('Error fetching token statistics:', error);
+      return { holders: 0, transfers: 0, totalSupply: '0' };
+    }
+  }
+
+  async getSaleStatistics(contractAddress: string): Promise<{
+    totalRaised: string;
+    participantCount: number;
+    status: 'upcoming' | 'live' | 'ended';
+  }> {
+    try {
+      const response = await fetch(`${this.apiUrl}/api/contracts/presale/${contractAddress}/stats`, {
+        headers: this.getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        return { totalRaised: '0', participantCount: 0, status: 'upcoming' };
+      }
+
+      const data = await response.json();
+      return {
+        totalRaised: data.totalRaised || '0',
+        participantCount: data.participantCount || 0,
+        status: data.status || 'upcoming'
+      };
+    } catch (error) {
+      console.error('Error fetching sale statistics:', error);
+      return { totalRaised: '0', participantCount: 0, status: 'upcoming' };
     }
   }
 }

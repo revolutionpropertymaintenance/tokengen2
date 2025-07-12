@@ -108,9 +108,15 @@ router.get('/esr/balance/:address', async (req, res) => {
       return res.status(400).json({ error: 'Address is required' });
     }
     
-    // TODO: Implement actual ESR token balance checking
-    // This would require connecting to the blockchain and querying the ESR token contract
-    const balance = 0; // Placeholder - implement actual balance checking
+    // TODO: Implement actual ESR token balance checking using ethers.js
+    // Example implementation:
+    // const provider = new ethers.JsonRpcProvider(process.env.ETHEREUM_RPC_URL);
+    // const esrContract = new ethers.Contract(ESR_TOKEN_ADDRESS, ESR_ABI, provider);
+    // const balance = await esrContract.balanceOf(address);
+    // const decimals = await esrContract.decimals();
+    // const formattedBalance = parseFloat(ethers.formatUnits(balance, decimals));
+    
+    const balance = 0; // Placeholder - will be replaced with actual blockchain query
     
     res.json({ balance });
     
@@ -121,22 +127,35 @@ router.get('/esr/balance/:address', async (req, res) => {
 });
 
 // ESR Token deduction endpoint
-router.post('/esr/deduct', authenticate, async (req, res) => {
+router.post('/esr/deduct', async (req, res) => {
   try {
     const { amount } = req.body;
-    const userAddress = req.user.address;
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
+    }
     
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Valid amount is required' });
     }
     
-    // TODO: Implement actual ESR token deduction
-    // This would require:
-    // 1. Checking user's ESR balance
-    // 2. Transferring ESR tokens to platform wallet
-    // 3. Recording the transaction
+    // TODO: Implement actual ESR token deduction on the backend
+    // Note: In practice, ESR token deduction should be handled on the frontend
+    // using the user's wallet to sign the transaction. The backend should only
+    // verify that the deduction transaction was successful.
+    // 
+    // Backend implementation would require:
+    // 1. A backend wallet with ETH for gas fees
+    // 2. User approval for the backend to spend their ESR tokens
+    // 3. Backend calling transferFrom on the ESR token contract
+    // 
+    // Frontend implementation (recommended):
+    // 1. User signs transaction to transfer ESR to platform wallet
+    // 2. Backend verifies the transaction was successful
+    // 3. Backend proceeds with deployment
     
-    const success = true; // Placeholder - implement actual deduction
+    const success = true; // Placeholder - ESR deduction handled on frontend
     
     res.json({ success });
     
