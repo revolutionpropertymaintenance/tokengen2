@@ -1,5 +1,5 @@
 // ESR Token Configuration
-export const ESR_TOKEN_ADDRESS = import.meta.env.VITE_ESR_TOKEN_ADDRESS || '0x0000000000000000000000000000000000000000';
+export const ESR_TOKEN_ADDRESS = import.meta.env.VITE_ESR_TOKEN_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C';
 
 // Platform Configuration
 export const PLATFORM_WALLET = '0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C'; // Platform wallet for receiving ESR tokens
@@ -32,7 +32,7 @@ export const FEATURES = {
 // RPC endpoints - Now uses environment variables with fallbacks
 export const SELF_HOSTED_RPC = {
   // Mainnets
-  1: import.meta.env.VITE_ETHEREUM_RPC_URL || 'https://mainnet.infura.io/v3/YOUR_INFURA_KEY',
+  1: import.meta.env.VITE_ETHEREUM_RPC_URL || 'https://eth-mainnet.g.alchemy.com/v2/demo',
   56: import.meta.env.VITE_BSC_RPC_URL || 'https://bsc-dataseed.binance.org/',
   137: import.meta.env.VITE_POLYGON_RPC_URL || 'https://polygon-rpc.com/',
   42161: import.meta.env.VITE_ARBITRUM_RPC_URL || 'https://arb1.arbitrum.io/rpc',
@@ -40,8 +40,8 @@ export const SELF_HOSTED_RPC = {
   43114: import.meta.env.VITE_AVALANCHE_RPC_URL || 'https://api.avax.network/ext/bc/C/rpc',
   
   // Testnets
-  25062019: import.meta.env.VITE_ESTAR_TESTNET_RPC_URL || 'https://rpc.estar.games/',
-  5: import.meta.env.VITE_GOERLI_RPC_URL || 'https://goerli.infura.io/v3/YOUR_INFURA_KEY',
+  25062019: import.meta.env.VITE_ESTAR_TESTNET_RPC_URL || 'https://testnet-rpc.estar.games/',
+  5: import.meta.env.VITE_GOERLI_RPC_URL || 'https://eth-goerli.g.alchemy.com/v2/demo',
   97: import.meta.env.VITE_BSC_TESTNET_RPC_URL || 'https://data-seed-prebsc-1-s1.binance.org:8545/',
   80001: import.meta.env.VITE_MUMBAI_RPC_URL || 'https://rpc-mumbai.maticvigil.com/',
   421614: import.meta.env.VITE_ARBITRUM_SEPOLIA_RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc'

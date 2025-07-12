@@ -55,6 +55,16 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     setDeploymentError(null);
     
     try {
+      // Check if we're on the correct network
+      const currentNetwork = await web3Service.getCurrentNetwork();
+      if (currentNetwork?.chainId !== config.network.chainId) {
+        try {
+          await web3Service.switchNetwork(config.network);
+        } catch (error) {
+          throw new Error(`Please switch to ${config.network.name} network before deploying`);
+        }
+      }
+      
       // Deploy token using contractService
       const result = await contractService.deployToken({
         ...config,
@@ -66,6 +76,15 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
       console.error('Deployment failed:', error);
       setDeploymentError((error as Error).message);
       setDeploymentFailed(true);
+      
+      // Log detailed error for debugging
+      if (error instanceof Error) {
+        console.error('Deployment error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+      }
     } finally {
       setIsDeploying(false);
     }

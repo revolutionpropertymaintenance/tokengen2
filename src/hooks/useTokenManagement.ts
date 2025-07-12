@@ -154,8 +154,8 @@ export const useTokenManagement = (userAddress: string): TokenManagementHook => 
     
     // Check if mintable by looking for the mint function
     try {
-      const mintFunction = contract.getFunction('mint');
-      if (mintFunction) {
+      // First check if the function exists in the interface
+      if (contract.interface.getFunction('mint(address,uint256)')) {
         features.mintable = true;
       }
     } catch (error) {
@@ -164,8 +164,7 @@ export const useTokenManagement = (userAddress: string): TokenManagementHook => 
     
     // Check if burnable by looking for the burn function
     try {
-      const burnFunction = contract.getFunction('burn');
-      if (burnFunction) {
+      if (contract.interface.getFunction('burn(uint256)')) {
         features.burnable = true;
       }
     } catch (error) {
@@ -174,10 +173,8 @@ export const useTokenManagement = (userAddress: string): TokenManagementHook => 
     
     // Check for transfer fees by looking for fee-related functions
     try {
-      const feePercentageFunction = contract.getFunction('transferFeePercentage');
-      const feeRecipientFunction = contract.getFunction('feeRecipient');
-      
-      if (feePercentageFunction && feeRecipientFunction) {
+      if (contract.interface.getFunction('transferFeePercentage()') && 
+          contract.interface.getFunction('feeRecipient()')) {
         const feePercentage = await contract.transferFeePercentage();
         const feeRecipient = await contract.feeRecipient();
         
@@ -194,9 +191,7 @@ export const useTokenManagement = (userAddress: string): TokenManagementHook => 
     
     // Check for redistribution by looking for redistribution-related functions
     try {
-      const redistributionFunction = contract.getFunction('redistributionPercentage');
-      
-      if (redistributionFunction) {
+      if (contract.interface.getFunction('redistributionPercentage()')) {
         const redistributionPercentage = await contract.redistributionPercentage();
         
         features.holderRedistribution = {
@@ -210,6 +205,16 @@ export const useTokenManagement = (userAddress: string): TokenManagementHook => 
     
     // Check for vesting by looking for a separate vesting contract
     // This would require additional logic to find associated vesting contracts
+    try {
+      // Check if this token has any vesting schedules in our database
+      // This is a placeholder - in a real implementation, we would query the backend
+      const vestingContractAddress = localStorage.getItem(`vesting_${tokenData.address.toLowerCase()}`);
+      if (vestingContractAddress) {
+        features.vesting.enabled = true;
+      }
+    } catch (error) {
+      // No vesting
+    }
     
     return features;
   };

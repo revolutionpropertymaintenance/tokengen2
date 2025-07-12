@@ -20,6 +20,7 @@ export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({
   const [deductError, setDeductError] = useState<string | null>(null);
   const [deductSuccess, setDeductSuccess] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const hasEnoughBalance = balance >= requiredAmount;
 
@@ -27,7 +28,7 @@ export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({
     if (isConnected && address) {
       checkBalance(address);
     }
-  }, [isConnected, address, checkBalance]);
+  }, [isConnected, address, checkBalance, retryCount]);
 
   useEffect(() => {
     onBalanceChange?.(hasEnoughBalance);
@@ -114,7 +115,10 @@ export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({
               {error}
             </p>
             <button 
-              onClick={() => address && checkBalance(address)}
+              onClick={() => {
+                setRetryCount(prev => prev + 1);
+                address && checkBalance(address);
+              }}
               className="mt-2 text-amber-400 hover:text-amber-300 text-sm font-medium"
             >
               Try Again

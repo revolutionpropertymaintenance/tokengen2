@@ -104,15 +104,15 @@ export const TokenInfoStep: React.FC<TokenInfoStepProps> = ({ config, onNext, on
     const newErrors: Record<string, string> = {};
 
     if (!selectedToken) {
-      newErrors.token = 'Please select a token';
+      newErrors.token = 'Please select a token from the list';
     }
 
     if (!allocatedAmount || parseFloat(allocatedAmount) <= 0) {
-      newErrors.allocatedAmount = 'Allocated amount must be greater than 0';
+      newErrors.allocatedAmount = 'Please enter a valid allocation amount greater than 0';
     }
 
     if (selectedToken && allocatedAmount && parseFloat(allocatedAmount) > parseFloat(selectedToken.maxSupply)) {
-      newErrors.allocatedAmount = 'Allocated amount cannot exceed max supply';
+      newErrors.allocatedAmount = `Allocated amount cannot exceed max supply (${parseInt(selectedToken.maxSupply).toLocaleString()})`;
     }
 
     setErrors(newErrors);

@@ -26,7 +26,7 @@ export const WalletSetupStep: React.FC<WalletSetupStepProps> = ({ config, onNext
   };
 
   const isValidAddress = (address: string) => {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
+    return /^0x[a-fA-F0-9]{40}$/i.test(address);
   };
 
   const validateForm = () => {
@@ -35,13 +35,19 @@ export const WalletSetupStep: React.FC<WalletSetupStepProps> = ({ config, onNext
     if (!walletSetup.saleReceiver.trim()) {
       newErrors.saleReceiver = 'Sale receiver wallet is required';
     } else if (!isValidAddress(walletSetup.saleReceiver)) {
-      newErrors.saleReceiver = 'Invalid wallet address format';
+      newErrors.saleReceiver = 'Invalid wallet address format. Must start with 0x followed by 40 hex characters.';
     }
 
     if (!walletSetup.refundWallet.trim()) {
       newErrors.refundWallet = 'Refund wallet is required';
     } else if (!isValidAddress(walletSetup.refundWallet)) {
-      newErrors.refundWallet = 'Invalid wallet address format';
+      newErrors.refundWallet = 'Invalid wallet address format. Must start with 0x followed by 40 hex characters.';
+    }
+    
+    // Check if both addresses are the same
+    if (walletSetup.saleReceiver && walletSetup.refundWallet && 
+        walletSetup.saleReceiver.toLowerCase() === walletSetup.refundWallet.toLowerCase()) {
+      newErrors.refundWallet = 'Sale receiver and refund wallet should be different for security';
     }
 
     setErrors(newErrors);

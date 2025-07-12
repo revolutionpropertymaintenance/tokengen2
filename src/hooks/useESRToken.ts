@@ -34,7 +34,7 @@ export const useESRToken = (): ESRTokenHook => {
     if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
       console.warn('ESR Token address not configured');
       setBalance(0);
-      setError('ESR Token address not configured');
+      setError('ESR Token address not configured. Please check your environment variables.');
       return;
     }
 
@@ -43,7 +43,7 @@ export const useESRToken = (): ESRTokenHook => {
     try {
       const provider = web3Service.getProvider();
       if (!provider) {
-        throw new Error('Provider not available');
+        throw new Error('Wallet provider not available. Please connect your wallet.');
       }
       
       // Create ESR token contract instance
@@ -58,8 +58,9 @@ export const useESRToken = (): ESRTokenHook => {
       // Format balance from wei to human readable
       const formattedBalance = parseFloat(ethers.formatUnits(balanceWei, decimals));
       setBalance(formattedBalance);
-      
-      console.log(`ESR Balance for ${address}: ${formattedBalance} ESR`);
+
+      // Log balance for debugging
+      console.log(`ESR Balance for ${address.slice(0, 6)}...${address.slice(-4)}: ${formattedBalance} ESR`);
     } catch (error) {
       const errorMessage = (error as Error).message || 'Unknown error';
       console.error('Error checking ESR balance:', errorMessage);
@@ -68,7 +69,8 @@ export const useESRToken = (): ESRTokenHook => {
       // Set a user-friendly error message
       setError(
         errorMessage.includes('network') ? 'Network error. Please check your connection.' :
-        'Failed to check ESR balance. Please try again later.'
+        errorMessage.includes('wallet') ? errorMessage :
+        'Failed to check ESR balance. Please try refreshing the page or reconnecting your wallet.'
       );
     } finally {
       setIsLoading(false);
@@ -82,14 +84,15 @@ export const useESRToken = (): ESRTokenHook => {
     setError(null);
     
     if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
-      throw new Error('ESR Token address not configured');
+      throw new Error('ESR Token address not configured. Please check your environment variables.');
     }
 
     try {
       const signer = web3Service.getSigner();
       if (!signer) {
-        throw new Error('Signer not available');
-        setError('Wallet connection issue. Please reconnect your wallet.');
+        const error = new Error('Wallet connection issue. Please reconnect your wallet.');
+        setError(error.message);
+        throw error;
       }
       
       // Create ESR token contract instance with signer
@@ -104,11 +107,12 @@ export const useESRToken = (): ESRTokenHook => {
       // Check current balance
       const currentBalance = await esrContract.balanceOf(address);
       const formattedBalance = ethers.formatUnits(currentBalance, decimals);
-      if (parseFloat(formattedBalance) < amount) {
-        throw new Error(`Insufficient ESR balance. Required: ${amount} ESR, Available: ${ethers.formatUnits(currentBalance, decimals)} ESR`);
+      const availableBalance = parseFloat(formattedBalance);
+      if (availableBalance < amount) {
+        throw new Error(`Insufficient ESR balance. Required: ${amount} ESR, Available: ${availableBalance.toFixed(2)} ESR`);
       }
       
-      console.log(`Transferring ${amount} ESR tokens to platform wallet...`);
+      console.log(`Transferring ${amount} ESR tokens to platform wallet ${PLATFORM_WALLET.slice(0, 6)}...${PLATFORM_WALLET.slice(-4)}`);
       
       // Transfer ESR tokens to platform wallet
       const tx = await esrContract.transfer(PLATFORM_WALLET, amountWei);
@@ -120,7 +124,7 @@ export const useESRToken = (): ESRTokenHook => {
       const receipt = await tx.wait();
       
       if (receipt.status === 1) {
-        console.log(`ESR transfer confirmed in block ${receipt.blockNumber}`);
+        console.log(`ESR transfer confirmed in block ${receipt.blockNumber}. Gas used: ${receipt.gasUsed.toString()}`);
         
         // Notify backend about the transaction
         try {
@@ -131,6 +135,7 @@ export const useESRToken = (): ESRTokenHook => {
           });
         } catch (apiError) {
           console.error('Failed to notify backend about ESR deduction:', apiError);
+          // Continue even if backend notification fails
         }
         
         // Update balance after successful transaction
@@ -141,9 +146,10 @@ export const useESRToken = (): ESRTokenHook => {
         return txHash;
       } else {
         throw new Error('ESR transfer transaction failed');
-      }      
+      }
     } catch (error) {
       console.error('Error deducting ESR tokens:', error);
+      setError((error as Error).message);
       throw error;
     }
   }, [checkBalance]);

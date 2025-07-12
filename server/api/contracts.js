@@ -178,16 +178,20 @@ router.get('/:address/stats', authenticate, async (req, res) => {
     const tokenABI = [
       'function totalSupply() view returns (uint256)',
       'function balanceOf(address) view returns (uint256)',
-      'function decimals() view returns (uint8)'
+      'function decimals() view returns (uint8)',
+      'function name() view returns (string)',
+      'function symbol() view returns (string)'
     ];
     
     const tokenContract = new ethers.Contract(address, tokenABI, provider);
     
     // Get token data
     try {
-      const [totalSupply, decimals] = await Promise.all([
+      const [totalSupply, decimals, name, symbol] = await Promise.all([
         tokenContract.totalSupply(),
-        tokenContract.decimals()
+        tokenContract.decimals(),
+        tokenContract.name().catch(() => 'Unknown'),
+        tokenContract.symbol().catch(() => 'UNK')
       ]);
       
       // Get transfer events to estimate holder count
@@ -220,6 +224,9 @@ router.get('/:address/stats', authenticate, async (req, res) => {
         holders: uniqueAddresses.size,
         transfers: events.length,
         totalSupply: ethers.formatUnits(totalSupply, decimals),
+        name,
+        symbol,
+        decimals,
         lastUpdated: new Date().toISOString()
       };
       
@@ -235,7 +242,7 @@ router.get('/:address/stats', authenticate, async (req, res) => {
         lastUpdated: new Date().toISOString(),
         error: 'Failed to query contract data'
       };
-      
+
       res.json(stats);
     }
     
@@ -366,17 +373,19 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
     const presaleABI = [
       'function getSaleStats() view returns (uint256 _totalRaised, uint256 _totalParticipants, uint256 _totalTokensSold, bool _softCapReached, bool _hardCapReached, uint256 _timeRemaining)',
       'function saleInfo() view returns (address token, uint256 tokenPrice, uint256 softCap, uint256 hardCap, uint256 minPurchase, uint256 maxPurchase, uint256 startTime, uint256 endTime, bool whitelistEnabled)',
-      'function saleFinalized() view returns (bool)'
+      'function saleFinalized() view returns (bool)',
+      'function vestingInfo() view returns (bool enabled, uint256 initialRelease, uint256 vestingDuration)'
     ];
     
     const presaleContract = new ethers.Contract(address, presaleABI, provider);
     
     try {
       // Get presale data
-      const [saleStats, saleInfo, isFinalized] = await Promise.all([
+      const [saleStats, saleInfo, isFinalized, vestingInfo] = await Promise.all([
         presaleContract.getSaleStats(),
         presaleContract.saleInfo(),
-        presaleContract.saleFinalized()
+        presaleContract.saleFinalized(),
+        presaleContract.vestingInfo().catch(() => ({ enabled: false, initialRelease: 0, vestingDuration: 0 }))
       ]);
       
       // Calculate status based on contract data
@@ -399,6 +408,10 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
         softCapReached: saleStats[3],
         hardCapReached: saleStats[4],
         status: status,
+        vestingEnabled: vestingInfo.enabled,
+        initialRelease: Number(vestingInfo.initialRelease),
+        vestingDuration: Number(vestingInfo.vestingDuration),
+        isFinalized,
         lastUpdated: new Date().toISOString()
       };
       
@@ -410,8 +423,8 @@ router.get('/presale/:address/stats', authenticate, async (req, res) => {
       let status = 'upcoming';
       if (presaleConfig?.saleConfiguration) {
         const now = new Date();
-        const startDate = new Date(presaleConfig.saleConfiguration.startDate);
-        const endDate = new Date(presaleConfig.saleConfiguration.endDate);
+        const startDate = presaleConfig.saleConfiguration.startDate ? new Date(presaleConfig.saleConfiguration.startDate) : new Date(Date.now() + 86400000);
+        const endDate = presaleConfig.saleConfiguration.endDate ? new Date(presaleConfig.saleConfiguration.endDate) : new Date(Date.now() + 14 * 86400000);
         
         if (now >= startDate && now <= endDate) {
           status = 'live';

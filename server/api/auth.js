@@ -105,7 +105,7 @@ router.get('/esr/balance/:address', async (req, res) => {
     const { address } = req.params;
     
     if (!address) {
-      return res.status(400).json({ error: 'Address is required' });
+      return res.status(400).json({ error: 'Wallet address is required' });
     }
     
     // Implement actual ESR token balance checking
@@ -113,8 +113,11 @@ router.get('/esr/balance/:address', async (req, res) => {
     const ESR_TOKEN_ADDRESS = process.env.ESR_TOKEN_ADDRESS;
     
     if (!ESR_TOKEN_ADDRESS || ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
-      console.warn('ESR Token address not properly configured');
-      return res.json({ balance: 0 });
+      console.warn('ESR Token address not properly configured in server environment');
+      return res.status(500).json({ 
+        error: 'ESR Token address not configured on server',
+        balance: 0 
+      });
     }
     
     const ESR_ABI = [
@@ -133,16 +136,29 @@ router.get('/esr/balance/:address', async (req, res) => {
       const formattedBalance = parseFloat(ethers.formatUnits(balance, decimals));
       console.log(`ESR balance for ${address}: ${formattedBalance}`);
       
-      res.json({ balance: formattedBalance });
+      res.json({ 
+        balance: formattedBalance,
+        address: address,
+        token: ESR_TOKEN_ADDRESS,
+        timestamp: new Date().toISOString()
+      });
     } catch (contractError) {
       console.error('ESR contract error:', contractError);
-      res.json({ balance: 0 });
+      res.status(500).json({ 
+        error: 'Failed to query ESR token contract',
+        details: contractError.message,
+        balance: 0 
+      });
     }
     
     
   } catch (error) {
     console.error('ESR balance check error:', error);
-    res.status(500).json({ error: 'Failed to check ESR balance' });
+    res.status(500).json({ 
+      error: 'Failed to check ESR balance',
+      details: error.message,
+      balance: 0
+    });
   }
 });
 

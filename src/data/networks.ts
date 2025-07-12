@@ -65,7 +65,7 @@ export const testnets: Network[] = [
     symbol: 'ESR',
     chainId: 25062019,
     rpcUrl: SELF_HOSTED_RPC[25062019],
-    explorerUrl: 'https://esrscan.com',
+    explorerUrl: 'https://testnet.esrscan.com',
     gasPrice: '0.001 ESR (~$0.00)'
   },
   {

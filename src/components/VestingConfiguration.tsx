@@ -39,7 +39,7 @@ export const VestingConfiguration: React.FC<VestingConfigurationProps> = ({ conf
     const totalPercentage = getTotalPercentage();
     
     if (totalPercentage > 100) {
-      newErrors.totalPercentage = 'Total vesting percentage cannot exceed 100%';
+      newErrors.totalPercentage = `Total vesting percentage is ${totalPercentage}%, but cannot exceed 100%`;
     }
 
     vesting.forEach((vest, index) => {
@@ -47,11 +47,18 @@ export const VestingConfiguration: React.FC<VestingConfigurationProps> = ({ conf
         if (vest.percentage <= 0) {
           newErrors[`percentage_${index}`] = 'Percentage must be greater than 0';
         }
+        if (vest.percentage > 100) {
+          newErrors[`percentage_${index}`] = 'Percentage cannot exceed 100%';
+        }
         if (!vest.startDate) {
-          newErrors[`startDate_${index}`] = 'Start date is required';
+          newErrors[`startDate_${index}`] = 'Please select a start date';
         }
         if (vest.duration <= 0) {
-          newErrors[`duration_${index}`] = 'Duration must be greater than 0';
+          newErrors[`duration_${index}`] = 'Duration must be at least 1 day';
+        }
+        // Check if start date is in the past
+        if (vest.startDate && new Date(vest.startDate) <= new Date()) {
+          newErrors[`startDate_${index}`] = 'Start date must be in the future';
         }
       }
     });

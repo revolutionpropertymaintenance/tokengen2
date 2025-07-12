@@ -19,6 +19,7 @@ export const SaleConfigStep: React.FC<SaleConfigStepProps> = ({ config, onNext, 
   const getTomorrowDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    // Format as YYYY-MM-DDThh:mm
     return tomorrow.toISOString().slice(0, 16);
   };
 
@@ -33,7 +34,7 @@ export const SaleConfigStep: React.FC<SaleConfigStepProps> = ({ config, onNext, 
     const newErrors: Record<string, string> = {};
 
     if (!saleConfig.saleName.trim()) {
-      newErrors.saleName = 'Sale name is required';
+      newErrors.saleName = 'Please enter a name for your sale';
     }
 
     if (!saleConfig.softCap || parseFloat(saleConfig.softCap) <= 0) {
@@ -65,15 +66,20 @@ export const SaleConfigStep: React.FC<SaleConfigStepProps> = ({ config, onNext, 
     }
 
     if (!saleConfig.startDate) {
-      newErrors.startDate = 'Start date is required';
+      newErrors.startDate = 'Please select a start date and time';
     }
 
     if (!saleConfig.endDate) {
-      newErrors.endDate = 'End date is required';
+      newErrors.endDate = 'Please select an end date and time';
     }
 
     if (saleConfig.startDate && saleConfig.endDate && new Date(saleConfig.startDate) >= new Date(saleConfig.endDate)) {
       newErrors.endDate = 'End date must be after start date';
+    }
+    
+    // Check if start date is in the past
+    if (saleConfig.startDate && new Date(saleConfig.startDate) <= new Date()) {
+      newErrors.startDate = 'Start date must be in the future';
     }
 
     setErrors(newErrors);

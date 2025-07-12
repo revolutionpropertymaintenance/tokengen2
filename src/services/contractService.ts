@@ -180,9 +180,10 @@ export class ContractService {
     try {
       const contractType = this.getContractType(config);
       const constructorParams = this.getConstructorParams(config);
-      const useFactory = config.useFactory === undefined ? 
+      const useFactory = config.useFactory !== undefined ? 
+        config.useFactory : 
         ['BasicToken', 'BurnableToken', 'MintableToken', 'BurnableMintableToken'].includes(contractType) : 
-        config.useFactory;
+        true;
 
       const response = await fetch(`${this.apiUrl}/api/deploy/token`, {
         method: 'POST',
@@ -197,8 +198,15 @@ export class ContractService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Deployment failed');
+        let errorMessage = 'Deployment failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch (e) {
+          // If we can't parse the JSON, use the status text
+          errorMessage = `Deployment failed: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -230,8 +238,15 @@ export class ContractService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Presale deployment failed');
+        let errorMessage = 'Presale deployment failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.details || errorMessage;
+        } catch (e) {
+          // If we can't parse the JSON, use the status text
+          errorMessage = `Presale deployment failed: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
@@ -253,11 +268,11 @@ export class ContractService {
   async getDeployedTokens(): Promise<any[]> {
     try {
       const response = await fetch(`${this.apiUrl}/api/contracts/deployed`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders()
       });
 
       if (!response.ok) {
-        console.error('Failed to fetch deployed contracts');
+        console.error(`Failed to fetch deployed contracts: ${response.status} ${response.statusText}`);
         return [];
       }
 
@@ -272,11 +287,11 @@ export class ContractService {
   async getDeployedPresales(): Promise<any[]> {
     try {
       const response = await fetch(`${this.apiUrl}/api/contracts/deployed`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders()
       });
 
       if (!response.ok) {
-        console.error('Failed to fetch deployed presales');
+        console.error(`Failed to fetch deployed presales: ${response.status} ${response.statusText}`);
         return [];
       }
 
@@ -293,7 +308,7 @@ export class ContractService {
       const response = await fetch(`${this.apiUrl}/api/contracts/presales/public`);
 
       if (!response.ok) {
-        console.error('Failed to fetch public presales');
+        console.error(`Failed to fetch public presales: ${response.status} ${response.statusText}`);
         return [];
       }
 
@@ -308,11 +323,11 @@ export class ContractService {
   async checkESRBalance(address: string): Promise<number> {
     try {
       const response = await fetch(`${this.apiUrl}/api/esr/balance/${address}`, {
-        headers: this.getAuthHeaders(),
+        headers: this.getAuthHeaders()
       });
 
       if (!response.ok) {
-        console.error('Failed to fetch ESR balance');
+        console.error(`Failed to fetch ESR balance: ${response.status} ${response.statusText}`);
         return 0;
       }
 
@@ -333,8 +348,14 @@ export class ContractService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to deduct ESR tokens');
+        let errorMessage = 'Failed to deduct ESR tokens';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          errorMessage = `Failed to deduct ESR tokens: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();

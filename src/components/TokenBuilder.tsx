@@ -43,11 +43,11 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
     const newErrors: Record<string, string> = {};
 
     if (!config.name.trim()) {
-      newErrors.name = 'Token name is required';
+      newErrors.name = 'Please enter a token name';
     }
 
     if (!config.symbol.trim()) {
-      newErrors.symbol = 'Token symbol is required';
+      newErrors.symbol = 'Please enter a token symbol';
     } else if (config.symbol.length > 10) {
       newErrors.symbol = 'Symbol must be 10 characters or less';
     }
@@ -55,17 +55,29 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
     if (!config.initialSupply || parseFloat(config.initialSupply) <= 0) {
       newErrors.initialSupply = 'Initial supply must be greater than 0';
     }
+    
+    // Check if max supply is less than initial supply
+    if (config.maxSupply && parseFloat(config.maxSupply) > 0 && parseFloat(config.maxSupply) < parseFloat(config.initialSupply)) {
+      newErrors.maxSupply = 'Max supply cannot be less than initial supply';
+    }
 
     if (config.features.transferFees.enabled && !config.features.transferFees.recipient.trim()) {
-      newErrors.feeRecipient = 'Fee recipient address is required';
+      newErrors.feeRecipient = 'Please enter a fee recipient address';
     }
 
     if (config.features.transferFees.enabled && (config.features.transferFees.percentage < 0 || config.features.transferFees.percentage > 10)) {
-      newErrors.feePercentage = 'Fee percentage must be between 0 and 10';
+      newErrors.feePercentage = 'Fee percentage must be between 0 and 10%';
     }
 
     if (config.features.holderRedistribution.enabled && (config.features.holderRedistribution.percentage < 0 || config.features.holderRedistribution.percentage > 5)) {
-      newErrors.redistributionPercentage = 'Redistribution percentage must be between 0 and 5';
+      newErrors.redistributionPercentage = 'Redistribution percentage must be between 0 and 5%';
+    }
+    
+    // Validate fee recipient address format if provided
+    if (config.features.transferFees.enabled && config.features.transferFees.recipient) {
+      if (!/^0x[a-fA-F0-9]{40}$/.test(config.features.transferFees.recipient)) {
+        newErrors.feeRecipient = 'Invalid wallet address format';
+      }
     }
 
     setErrors(newErrors);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star } from 'lucide-react';
 import { WalletConnection } from './WalletConnection';
+import { useWallet } from '../hooks/useWallet';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -17,6 +18,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onViewTokens,
   onExploreSales
 }) => {
+  const { isConnected } = useWallet();
+  
   const features = [
     {
       icon: Zap,
@@ -118,13 +121,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
               <button
                 onClick={onGetStarted}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center space-x-2 group"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center space-x-2 group w-full sm:w-auto justify-center"
               >
                 <span>Start Building</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               
-              <div className="flex items-center justify-center space-x-4 mt-6">
+              <div className="flex flex-wrap items-center justify-center gap-4 mt-6 w-full sm:w-auto">
                 <button
                   onClick={onLaunchSale}
                   className="text-green-400 hover:text-green-300 font-medium transition-colors"
@@ -149,15 +152,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               
               <button
                 onClick={onLaunchSale}
-                className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center space-x-2 group"
+                className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 flex items-center space-x-2 group w-full sm:w-auto justify-center"
               >
                 <span>Launch Sale</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               
-              <div className="text-gray-400 text-sm">
-                <span className="font-medium text-green-400">$25</span> per deployment
-              </div>
+              {!isConnected && (
+                <div className="text-gray-400 text-sm text-center sm:text-left">
+                  <span className="font-medium text-green-400">Connect wallet</span> to start
+                </div>
+              )}
             </div>
           </div>
         </div>
