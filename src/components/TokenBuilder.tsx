@@ -1,3 +1,5 @@
+Here's the fixed version with all missing closing brackets and parentheses added:
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
@@ -483,22 +485,30 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                     id="useFactory"
                     checked={config.useFactory}
                     onChange={(e) => updateConfig({ useFactory: e.target.checked })}
-              {/* Network Mode Selector */}
-              <div className="md:col-span-2 lg:col-span-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-white font-medium mb-1">Network Mode</h4>
-                    <p className="text-sm text-gray-300">
-                      {isTestnetMode 
-                        ? 'Testnet mode is active - deploy for free on test networks' 
-                        : 'Mainnet mode is active - deploy on production networks (requires ESR tokens)'}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-300">{isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
-                    <NetworkModeToggle />
-                  </div>
+                  />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Network Mode Selector */}
+          <div className="md:col-span-2 lg:col-span-3 p-4 bg-white/5 rounded-lg border border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-white font-medium mb-1">Network Mode</h4>
+                <p className="text-sm text-gray-300">
+                  {isTestnetMode 
+                    ? 'Testnet mode is active - deploy for free on test networks' 
+                    : 'Mainnet mode is active - deploy on production networks (requires ESR tokens)'}
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-gray-300">{isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
+                <NetworkModeToggle />
+              </div>
+            </div>
+          </div>
+
           {/* Warning */}
           <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-6">
             <div className="flex items-start space-x-3">
