@@ -4,7 +4,6 @@ import { PresaleConfig, PresaleDeploymentResult } from '../../types/presale';
 import { ESRBalanceCheck } from '../ESRBalanceCheck';
 import { contractService } from '../../services/contractService';
 import { web3Service } from '../../services/web3Service';
-import { web3Service } from '../../services/web3Service';
 
 interface PresaleReviewStepProps {
   config: PresaleConfig;

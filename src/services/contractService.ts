@@ -182,8 +182,7 @@ export class ContractService {
       const constructorParams = this.getConstructorParams(config);
       const useFactory = config.useFactory !== undefined ? 
         config.useFactory : 
-        ['BasicToken', 'BurnableToken', 'MintableToken', 'BurnableMintableToken'].includes(contractType) : 
-        true;
+        ['BasicToken', 'BurnableToken', 'MintableToken', 'BurnableMintableToken'].includes(contractType);
 
       const response = await fetch(`${this.apiUrl}/api/deploy/token`, {
         method: 'POST',
