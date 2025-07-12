@@ -306,6 +306,58 @@ The platform now operates with a secure backend service that handles all contrac
 }
 ```
 
+#### Token Management Dashboard
+```css
+.management-dashboard {
+  background-image: linear-gradient(to bottom right, from-slate-900 via-purple-900 to-slate-900);
+}
+
+.feature-nav {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.feature-button {
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.feature-button.active {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.feature-button:not(.active):not(:disabled):hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.feature-panel {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.token-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+}
+```
 #### My Tokens Dashboard
 ```css
 .tokens-dashboard {
@@ -651,6 +703,14 @@ The sale explorer page includes:
   - Token vesting & locking
 - **Presale & Private Sale**: Launch token sales with customizable parameters
 - **Deployment History**: Track all your deployed contracts and sales
+- **Token Management Dashboard**: Manage your tokens after deployment
+  - Feature-based UI that only shows enabled features
+  - Mint new tokens (owner only)
+  - Burn tokens from your wallet
+  - Adjust transfer fees and recipient addresses
+  - Manage holder redistribution settings
+  - Create and monitor vesting schedules
+  - View contract verification status
 - **Mobile Responsive**: Fully responsive design works on all devices
 - **Enterprise Security**: Secure wallet-based authentication and API protection
 
@@ -804,6 +864,21 @@ The platform automatically uses your configured RPC endpoints with intelligent f
 - **Auto-Refresh**: Data updates automatically every 15-30 seconds
 - **Status Tracking**: Real-time status based on actual blockchain state
 
+### 5. Manage Your Tokens
+
+1. **Access the Management Dashboard** via "My Tokens" or after deployment
+2. **Connect your wallet** (must be the contract owner for full access)
+3. Select the token to manage
+4. Access feature-specific controls:
+   - Mint new tokens to any address (owner only)
+   - Burn tokens from your connected wallet
+   - Adjust transfer fee rates and recipient addresses
+   - Manage holder redistribution settings
+   - Create and monitor vesting schedules
+   - View contract verification status
+5. All changes are executed as real blockchain transactions
+6. Non-owners can view token information in read-only mode
+
 ## Deployment Architecture
 
 ### Hardhat-Based Deployment (Production)
@@ -837,6 +912,11 @@ User Input → Frontend Validation → API Authentication → Hardhat Compilatio
 - **Real-time Monitoring**: Live blockchain data integration
 - **Dynamic Configuration**: Environment-based network and RPC configuration
 - **Deployment Tracking**: Complete audit trail of all deployments
+- **Token Management**: Comprehensive post-deployment management interface
+  - Access control based on contract ownership
+  - Feature detection to show only enabled capabilities
+  - Real-time interaction with deployed contracts
+  - Secure function calls for administrative actions
 
 ### Supported Networks
 
