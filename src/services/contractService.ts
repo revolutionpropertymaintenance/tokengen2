@@ -1,5 +1,7 @@
 import { TokenConfig, Network, VestingConfig } from '../types';
 import { PresaleConfig } from '../types/presale';
+import { AppError, ErrorType } from './errorHandler';
+import { web3Service } from './web3Service';
 
 export interface DeploymentResult {
   contractAddress: string;
@@ -39,7 +41,7 @@ export class ContractService {
       return data.token;
     } catch (error) {
       console.error('Authentication error:', error);
-      throw error;
+      throw new AppError('Authentication failed', ErrorType.AUTHENTICATION, error);
     }
   }
 
@@ -62,7 +64,7 @@ export class ContractService {
       return data.message;
     } catch (error) {
       console.error('Get auth message error:', error);
-      throw error;
+      throw new AppError('Failed to get authentication message', ErrorType.SERVER, error);
     }
   }
 
@@ -183,6 +185,20 @@ export class ContractService {
       const useFactory = config.useFactory !== undefined ? 
         config.useFactory : 
         ['BasicToken', 'BurnableToken', 'MintableToken', 'BurnableMintableToken'].includes(contractType);
+      
+      // Check if we're on the correct network
+      const currentNetwork = await web3Service.getCurrentNetwork();
+      if (currentNetwork?.chainId !== config.network.chainId) {
+        try {
+          await web3Service.switchNetwork(config.network);
+        } catch (error) {
+          throw new AppError(
+            `Please switch to ${config.network.name} network before deploying`,
+            ErrorType.NETWORK,
+            error
+          );
+        }
+      }
 
       const response = await fetch(`${this.apiUrl}/api/deploy/token`, {
         method: 'POST',
@@ -200,12 +216,12 @@ export class ContractService {
         let errorMessage = 'Deployment failed';
         try {
           const errorData = await response.json();
-          errorMessage = errorData.error || errorData.details || errorMessage;
+          errorMessage = errorData.error || errorData.details || 'Deployment failed';
         } catch (e) {
           // If we can't parse the JSON, use the status text
           errorMessage = `Deployment failed: ${response.status} ${response.statusText}`;
         }
-        throw new Error(errorMessage);
+        throw new AppError(errorMessage, ErrorType.SERVER);
       }
 
       const result = await response.json();
@@ -220,12 +236,34 @@ export class ContractService {
       };
     } catch (error) {
       console.error('Error deploying token:', error);
-      throw error;
+      if (error instanceof AppError) {
+        throw error;
+      } else {
+        throw new AppError(
+          (error as Error).message || 'Token deployment failed',
+          ErrorType.UNKNOWN,
+          error
+        );
+      }
     }
   }
 
   async deployPresale(config: PresaleConfig): Promise<DeploymentResult> {
     try {
+      // Check if we're on the correct network
+      const currentNetwork = await web3Service.getCurrentNetwork();
+      if (currentNetwork?.chainId !== config.network.chainId) {
+        try {
+          await web3Service.switchNetwork(config.network);
+        } catch (error) {
+          throw new AppError(
+            `Please switch to ${config.network.name} network before deploying`,
+            ErrorType.NETWORK,
+            error
+          );
+        }
+      }
+      
       const response = await fetch(`${this.apiUrl}/api/deploy/presale`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -240,12 +278,12 @@ export class ContractService {
         let errorMessage = 'Presale deployment failed';
         try {
           const errorData = await response.json();
-          errorMessage = errorData.error || errorData.details || errorMessage;
+          errorMessage = errorData.error || errorData.details || 'Presale deployment failed';
         } catch (e) {
           // If we can't parse the JSON, use the status text
           errorMessage = `Presale deployment failed: ${response.status} ${response.statusText}`;
         }
-        throw new Error(errorMessage);
+        throw new AppError(errorMessage, ErrorType.SERVER);
       }
 
       const result = await response.json();
@@ -260,7 +298,15 @@ export class ContractService {
       };
     } catch (error) {
       console.error('Error deploying presale contract:', error);
-      throw error;
+      if (error instanceof AppError) {
+        throw error;
+      } else {
+        throw new AppError(
+          (error as Error).message || 'Presale deployment failed',
+          ErrorType.UNKNOWN,
+          error
+        );
+      }
     }
   }
 

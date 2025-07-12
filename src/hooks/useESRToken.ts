@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
-import { ESR_TOKEN_ADDRESS, PLATFORM_WALLET } from '../config/constants';
+import { ESR_TOKEN_ADDRESS, PLATFORM_WALLET, isTestnet } from '../config/constants';
 import { ethers } from 'ethers';
 import { web3Service } from '../services/web3Service';
+import { AppError, ErrorType } from '../services/errorHandler';
 
 // ESR Token ABI (ERC-20 standard methods)
 const ESR_TOKEN_ABI = [
@@ -15,8 +16,9 @@ const ESR_TOKEN_ABI = [
 interface ESRTokenHook {
   balance: number;
   isLoading: boolean;
+  error: string | null;
   checkBalance: (address: string) => Promise<void>;
-  deductTokens: (address: string, amount: number) => Promise<void>;
+  deductTokens: (address: string, amount: number) => Promise<string>;
 }
 
 export const useESRToken = (): ESRTokenHook => {
@@ -27,14 +29,14 @@ export const useESRToken = (): ESRTokenHook => {
   const checkBalance = useCallback(async (address: string) => {
     if (!address) {
       setBalance(0);
-      setError(null);
+      setError('No wallet address provided');
       return;
     }
     
     if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
       console.warn('ESR Token address not configured');
       setBalance(0);
-      setError('ESR Token address not configured. Please check your environment variables.');
+      setError('ESR Token address not configured');
       return;
     }
 
@@ -43,7 +45,7 @@ export const useESRToken = (): ESRTokenHook => {
     try {
       const provider = web3Service.getProvider();
       if (!provider) {
-        throw new Error('Wallet provider not available. Please connect your wallet.');
+        throw new AppError('Wallet provider not available', ErrorType.WALLET);
       }
       
       // Create ESR token contract instance
@@ -58,6 +60,14 @@ export const useESRToken = (): ESRTokenHook => {
       // Format balance from wei to human readable
       const formattedBalance = parseFloat(ethers.formatUnits(balanceWei, decimals));
       setBalance(formattedBalance);
+      
+      // If this is a testnet, simulate a balance for testing
+      if (isTestnet(await provider.getNetwork().then(n => Number(n.chainId)))) {
+        console.log('Testnet detected, simulating ESR balance');
+        // Simulate a balance of 1000 ESR on testnets
+        setBalance(1000);
+        return;
+      }
 
       // Log balance for debugging
       console.log(`ESR Balance for ${address.slice(0, 6)}...${address.slice(-4)}: ${formattedBalance} ESR`);
@@ -68,9 +78,11 @@ export const useESRToken = (): ESRTokenHook => {
       
       // Set a user-friendly error message
       setError(
-        errorMessage.includes('network') ? 'Network error. Please check your connection.' :
-        errorMessage.includes('wallet') ? errorMessage :
-        'Failed to check ESR balance. Please try refreshing the page or reconnecting your wallet.'
+        errorMessage.includes('network') 
+          ? 'Network error. Please check your connection.' 
+          : errorMessage.includes('wallet') 
+          ? errorMessage 
+          : 'Failed to check ESR balance'
       );
     } finally {
       setIsLoading(false);
@@ -79,20 +91,29 @@ export const useESRToken = (): ESRTokenHook => {
 
   const deductTokens = useCallback(async (address: string, amount: number) => {
     if (!address) {
-      throw new Error('Wallet not connected');
+      throw new AppError('Wallet not connected', ErrorType.WALLET);
     }
     setError(null);
     
     if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
-      throw new Error('ESR Token address not configured. Please check your environment variables.');
+      throw new AppError('ESR Token address not configured', ErrorType.VALIDATION);
     }
 
     try {
+      // Check if we're on a testnet
+      const network = await web3Service.getCurrentNetwork();
+      if (network && isTestnet(network.chainId)) {
+        console.log('Testnet detected, simulating ESR token deduction');
+        // Simulate successful deduction on testnet
+        setTimeout(() => {
+          setBalance(prev => Math.max(0, prev - amount));
+        }, 1000);
+        return 'testnet-simulated-tx-hash';
+      }
+      
       const signer = web3Service.getSigner();
       if (!signer) {
-        const error = new Error('Wallet connection issue. Please reconnect your wallet.');
-        setError(error.message);
-        throw error;
+        throw new AppError('Wallet connection issue', ErrorType.WALLET);
       }
       
       // Create ESR token contract instance with signer
@@ -109,7 +130,7 @@ export const useESRToken = (): ESRTokenHook => {
       const formattedBalance = ethers.formatUnits(currentBalance, decimals);
       const availableBalance = parseFloat(formattedBalance);
       if (availableBalance < amount) {
-        throw new Error(`Insufficient ESR balance. Required: ${amount} ESR, Available: ${availableBalance.toFixed(2)} ESR`);
+        throw new AppError(`Insufficient ESR balance. Required: ${amount} ESR, Available: ${availableBalance.toFixed(2)} ESR`, ErrorType.VALIDATION);
       }
       
       console.log(`Transferring ${amount} ESR tokens to platform wallet ${PLATFORM_WALLET.slice(0, 6)}...${PLATFORM_WALLET.slice(-4)}`);
@@ -145,11 +166,15 @@ export const useESRToken = (): ESRTokenHook => {
         
         return txHash;
       } else {
-        throw new Error('ESR transfer transaction failed');
+        throw new AppError('ESR transfer transaction failed', ErrorType.CONTRACT);
       }
     } catch (error) {
       console.error('Error deducting ESR tokens:', error);
-      setError((error as Error).message);
+      if (error instanceof AppError) {
+        setError(error.message);
+      } else {
+        setError((error as Error).message);
+      }
       throw error;
     }
   }, [checkBalance]);
@@ -157,6 +182,7 @@ export const useESRToken = (): ESRTokenHook => {
   return {
     balance,
     isLoading,
+    error,
     error,
     checkBalance,
     deductTokens

@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { Network } from '../types';
+import { AppError, ErrorType } from './errorHandler';
 
 export class Web3Service {
   private provider: ethers.BrowserProvider | null = null;
@@ -8,7 +9,7 @@ export class Web3Service {
 
   async connect(): Promise<string> {
     if (typeof window.ethereum === 'undefined') {
-      throw new Error('MetaMask is not installed');
+      throw new AppError('MetaMask is not installed. Please install MetaMask or another Web3 wallet.', ErrorType.WALLET);
     }
 
     try {
@@ -31,24 +32,28 @@ export class Web3Service {
       return await this.signer.getAddress();
     } catch (error) {
       console.error('Error connecting to wallet:', error);
-      throw error;
+      throw new AppError(
+        (error as Error).message || 'Failed to connect to wallet',
+        ErrorType.WALLET,
+        error
+      );
     }
   }
 
   async getBalance(address: string): Promise<string> {
-    if (!this.provider) throw new Error('Provider not connected');
+    if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
     
     try {
       const balance = await this.provider.getBalance(address);
       return ethers.formatEther(balance);
     } catch (error) {
       console.error('Error getting balance:', error);
-      throw error;
+      throw new AppError('Failed to get wallet balance', ErrorType.NETWORK, error);
     }
   }
 
   async getTokenBalance(tokenAddress: string, userAddress: string): Promise<string> {
-    if (!this.provider) throw new Error('Provider not connected');
+    if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
     
     try {
       const tokenContract = new ethers.Contract(
@@ -65,12 +70,12 @@ export class Web3Service {
       return ethers.formatUnits(balance, decimals);
     } catch (error) {
       console.error('Error getting token balance:', error);
-      throw error;
+      throw new AppError('Failed to get token balance', ErrorType.CONTRACT, error);
     }
   }
 
   async switchNetwork(network: Network): Promise<void> {
-    if (!window.ethereum) throw new Error('MetaMask not found');
+    if (!window.ethereum) throw new AppError('MetaMask not found', ErrorType.WALLET);
     
     try {
       await window.ethereum.request({
@@ -84,7 +89,7 @@ export class Web3Service {
       if (error.code === 4902) {
         await this.addNetwork(network);
       } else {
-        throw error;
+        throw new AppError(`Failed to switch to ${network.name} network`, ErrorType.WALLET, error);
       }
     }
   }
@@ -188,7 +193,7 @@ export class Web3Service {
   }
 
   async estimateGas(transaction: any): Promise<string> {
-    if (!this.provider) throw new Error('Provider not connected');
+    if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
     
     const gasEstimate = await this.provider.estimateGas(transaction);
     const gasPrice = await this.provider.getFeeData();
@@ -328,28 +333,28 @@ export class Web3Service {
   }
 
   async sendTransaction(transaction: any): Promise<string> {
-    if (!this.signer) throw new Error('Signer not available');
+    if (!this.signer) throw new AppError('Signer not available', ErrorType.WALLET);
     
     try {
       const tx = await this.signer.sendTransaction(transaction);
       return tx.hash;
     } catch (error) {
       console.error('Error sending transaction:', error);
-      throw error;
+      throw new AppError('Transaction failed', ErrorType.CONTRACT, error);
     }
   }
 
   async waitForTransaction(txHash: string): Promise<ethers.TransactionReceipt> {
-    if (!this.provider) throw new Error('Provider not connected');
+    if (!this.provider) throw new AppError('Provider not connected', ErrorType.WALLET);
     
     try {
       const receipt = await this.provider.waitForTransaction(txHash);
-      if (!receipt) throw new Error('Transaction failed');
+      if (!receipt) throw new AppError('Transaction failed', ErrorType.CONTRACT);
       
       return receipt;
     } catch (error) {
       console.error('Error waiting for transaction:', error);
-      throw error;
+      throw new AppError('Transaction confirmation failed', ErrorType.NETWORK, error);
     }
   }
 
@@ -430,7 +435,7 @@ export class Web3Service {
   }
 
   async deployContract(abi: any, bytecode: string, args: any[]): Promise<{address: string, txHash: string}> {
-    if (!this.signer) throw new Error('Signer not available');
+    if (!this.signer) throw new AppError('Signer not available', ErrorType.WALLET);
     
     try {
       // Create contract factory
@@ -443,7 +448,7 @@ export class Web3Service {
       const address = await contract.getAddress();
       const deploymentTx = contract.deploymentTransaction();
       
-      if (!deploymentTx) throw new Error('Deployment transaction not found');
+      if (!deploymentTx) throw new AppError('Deployment transaction not found', ErrorType.CONTRACT);
       
       return {
         address,
@@ -451,7 +456,7 @@ export class Web3Service {
       };
     } catch (error) {
       console.error('Error deploying contract:', error);
-      throw error;
+      throw new AppError('Contract deployment failed', ErrorType.CONTRACT, error);
     }
   }
 

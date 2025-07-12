@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=https://api.tokenforge.io
+      - VITE_ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
+      - VITE_BSC_RPC_URL=${BSC_RPC_URL}
+      - VITE_POLYGON_RPC_URL=${POLYGON_RPC_URL}
+      - VITE_ESR_TOKEN_ADDRESS=${ESR_TOKEN_ADDRESS}
+    restart: always
+
+  # Backend service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+    environment:
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/tokenforge
+      - JWT_SECRET=${JWT_SECRET}
+      - ETHEREUM_RPC_URL=${ETHEREUM_RPC_URL}
+      - BSC_RPC_URL=${BSC_RPC_URL}
+      - POLYGON_RPC_URL=${POLYGON_RPC_URL}
+      - ARBITRUM_RPC_URL=${ARBITRUM_RPC_URL}
+      - FANTOM_RPC_URL=${FANTOM_RPC_URL}
+      - AVALANCHE_RPC_URL=${AVALANCHE_RPC_URL}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY}
+      - BSCSCAN_API_KEY=${BSCSCAN_API_KEY}
+      - POLYGONSCAN_API_KEY=${POLYGONSCAN_API_KEY}
+      - ESR_TOKEN_ADDRESS=${ESR_TOKEN_ADDRESS}
+      - PLATFORM_WALLET=${PLATFORM_WALLET}
+      - NODE_ENV=production
+    restart: always
+    volumes:
+      - ./deployments:/app/deployments
+
+  # MongoDB for persistent storage
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+
+volumes:
+  mongodb_data:
