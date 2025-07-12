@@ -317,21 +317,22 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-300">Estimated Gas</span>
-                <span className="text-white font-medium">{estimatedGas.amount} {config.network.symbol}</span>
+                <span className="text-white font-medium">{gasEstimate.amount} {config.network.symbol}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-300">USD Cost</span>
-                <span className="text-white font-medium">{estimatedGas.usd}</span>
+                <span className="text-white font-medium">{gasEstimate.usd}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-300">ESR Fee</span>
                 <span className="text-white font-medium">100 ESR</span>
-                  <div className="flex items-center">
-                    <span className="text-white font-medium">{config.network.name}</span>
-                    {isEstimating && (
-                      <div className="ml-2 w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-                    )}
-                  </div>
+              </div>
+              <div className="flex items-center">
+                <span className="text-white font-medium">{config.network.name}</span>
+                {isEstimating && (
+                  <div className="ml-2 w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                )}
+              </div>
               <div className="border-t border-white/20 pt-4">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Total Cost</span>
