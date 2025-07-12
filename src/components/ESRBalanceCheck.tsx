@@ -15,8 +15,11 @@ export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({
   onBalanceChange 
 }) => {
   const { isConnected, address } = useWallet();
-  const { balance, isLoading, checkBalance, deductTokens } = useESRToken();
+  const { balance, isLoading, error, checkBalance, deductTokens } = useESRToken();
   const [isDeducting, setIsDeducting] = useState(false);
+  const [deductError, setDeductError] = useState<string | null>(null);
+  const [deductSuccess, setDeductSuccess] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const hasEnoughBalance = balance >= requiredAmount;
 
@@ -33,12 +36,20 @@ export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({
   const handleDeductTokens = async () => {
     if (!address || !hasEnoughBalance) return;
     
+    setDeductError(null);
+    setDeductSuccess(false);
+    setTxHash(null);
     setIsDeducting(true);
+    
     try {
-      await deductTokens(address, requiredAmount);
+      const hash = await deductTokens(address, requiredAmount);
+      setTxHash(hash);
+      setDeductSuccess(true);
       await checkBalance(address);
     } catch (error) {
-      console.error('Failed to deduct tokens:', error);
+      const errorMessage = (error as Error).message || 'Failed to deduct tokens';
+      console.error('Failed to deduct tokens:', errorMessage);
+      setDeductError(errorMessage);
     } finally {
       setIsDeducting(false);
     }
@@ -86,6 +97,28 @@ export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({
             <p className="text-gray-300 text-sm">
               Verifying your ESR token balance...
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error && !isTestnet) {
+    return (
+      <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-6">
+        <div className="flex items-center space-x-3">
+          <AlertCircle className="w-5 h-5 text-amber-400" />
+          <div>
+            <h3 className="font-medium text-amber-400 mb-1">Balance Check Error</h3>
+            <p className="text-amber-300 text-sm">
+              {error}
+            </p>
+            <button 
+              onClick={() => address && checkBalance(address)}
+              className="mt-2 text-amber-400 hover:text-amber-300 text-sm font-medium"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -147,11 +180,29 @@ export const ESRBalanceCheck: React.FC<ESRBalanceCheckProps> = ({
       )}
 
       {hasEnoughBalance && !isTestnet && (
-        <div className="mt-4 p-3 bg-blue-500/20 rounded-lg">
-          <p className="text-blue-300 text-sm">
-            ✅ Ready to deploy! {requiredAmount} ESR tokens will be deducted upon deployment.
-          </p>
-        </div>
+        <>
+          <div className="mt-4 p-3 bg-blue-500/20 rounded-lg">
+            <p className="text-blue-300 text-sm">
+              ✅ Ready to deploy! {requiredAmount} ESR tokens will be deducted upon deployment.
+            </p>
+          </div>
+          
+          {deductSuccess && txHash && (
+            <div className="mt-4 p-3 bg-green-500/20 rounded-lg">
+              <p className="text-green-300 text-sm">
+                ✅ ESR tokens successfully deducted! Transaction: {txHash.slice(0, 10)}...{txHash.slice(-6)}
+              </p>
+            </div>
+          )}
+          
+          {deductError && (
+            <div className="mt-4 p-3 bg-red-500/20 rounded-lg">
+              <p className="text-red-300 text-sm">
+                ❌ Error: {deductError}
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

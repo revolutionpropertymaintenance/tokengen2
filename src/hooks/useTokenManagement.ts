@@ -152,46 +152,64 @@ export const useTokenManagement = (userAddress: string): TokenManagementHook => 
       verified: true
     };
     
-    // Check if mintable
+    // Check if mintable by looking for the mint function
     try {
-      await contract.mint.staticCall(ethers.ZeroAddress, 0);
-      features.mintable = true;
+      const mintFunction = contract.getFunction('mint');
+      if (mintFunction) {
+        features.mintable = true;
+      }
     } catch (error) {
       // Not mintable or not owner
     }
     
-    // Check if burnable
+    // Check if burnable by looking for the burn function
     try {
-      await contract.burn.staticCall(0);
-      features.burnable = true;
+      const burnFunction = contract.getFunction('burn');
+      if (burnFunction) {
+        features.burnable = true;
+      }
     } catch (error) {
       // Not burnable
     }
     
-    // Check for transfer fees
+    // Check for transfer fees by looking for fee-related functions
     try {
-      const feePercentage = await contract.transferFeePercentage();
-      const feeRecipient = await contract.feeRecipient();
-      features.transferFees = {
-        enabled: feePercentage > 0,
-        percentage: Number(feePercentage) / 100, // Convert from basis points
-        recipient: feeRecipient,
-        editable: true
-      };
+      const feePercentageFunction = contract.getFunction('transferFeePercentage');
+      const feeRecipientFunction = contract.getFunction('feeRecipient');
+      
+      if (feePercentageFunction && feeRecipientFunction) {
+        const feePercentage = await contract.transferFeePercentage();
+        const feeRecipient = await contract.feeRecipient();
+        
+        features.transferFees = {
+          enabled: feePercentage > 0,
+          percentage: Number(feePercentage) / 100, // Convert from basis points
+          recipient: feeRecipient,
+          editable: true
+        };
+      }
     } catch (error) {
       // No transfer fees
     }
     
-    // Check for redistribution
+    // Check for redistribution by looking for redistribution-related functions
     try {
-      const redistributionPercentage = await contract.redistributionPercentage();
-      features.holderRedistribution = {
-        enabled: redistributionPercentage > 0,
-        percentage: Number(redistributionPercentage) / 100
-      };
+      const redistributionFunction = contract.getFunction('redistributionPercentage');
+      
+      if (redistributionFunction) {
+        const redistributionPercentage = await contract.redistributionPercentage();
+        
+        features.holderRedistribution = {
+          enabled: redistributionPercentage > 0,
+          percentage: Number(redistributionPercentage) / 100
+        };
+      }
     } catch (error) {
       // No redistribution
     }
+    
+    // Check for vesting by looking for a separate vesting contract
+    // This would require additional logic to find associated vesting contracts
     
     return features;
   };

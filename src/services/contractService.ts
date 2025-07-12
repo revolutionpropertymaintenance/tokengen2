@@ -304,16 +304,23 @@ export class ContractService {
     totalSupply: string;
   }> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/contracts/${contractAddress}/stats`, {
+      const response = await fetch(`${this.apiUrl}/api/contracts/${contractAddress}/stats?network=${network.id}`, {
         headers: this.getAuthHeaders(),
       });
 
       if (!response.ok) {
+        console.error(`Failed to fetch token statistics: ${response.status} ${response.statusText}`);
         // Return default values if API call fails
         return { holders: 0, transfers: 0, totalSupply: '0' };
       }
 
       const data = await response.json();
+      
+      // If there's an error in the response, log it and return defaults
+      if (data.error) {
+        console.error(`Error in token statistics response: ${data.error}`);
+      }
+      
       return {
         holders: data.holders || 0,
         transfers: data.transfers || 0,
@@ -331,15 +338,26 @@ export class ContractService {
     status: 'upcoming' | 'live' | 'ended';
   }> {
     try {
-      const response = await fetch(`${this.apiUrl}/api/contracts/presale/${contractAddress}/stats`, {
+      // Get current network from web3Service
+      const network = await web3Service.getCurrentNetwork();
+      const networkId = network?.id || 'ethereum';
+      
+      const response = await fetch(`${this.apiUrl}/api/contracts/presale/${contractAddress}/stats?network=${networkId}`, {
         headers: this.getAuthHeaders(),
       });
 
       if (!response.ok) {
+        console.error(`Failed to fetch sale statistics: ${response.status} ${response.statusText}`);
         return { totalRaised: '0', participantCount: 0, status: 'upcoming' };
       }
 
       const data = await response.json();
+      
+      // If there's an error in the response, log it
+      if (data.error) {
+        console.error(`Error in sale statistics response: ${data.error}`);
+      }
+      
       return {
         totalRaised: data.totalRaised || '0',
         participantCount: data.participantCount || 0,

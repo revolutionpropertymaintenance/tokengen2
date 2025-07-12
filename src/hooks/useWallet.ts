@@ -23,6 +23,7 @@ export const useWallet = () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         setIsConnecting(true);
+        setWallet(prev => ({...prev, error: null}));
         
         // Request account access
         const provider = new ethers.BrowserProvider(window.ethereum);
@@ -35,6 +36,7 @@ export const useWallet = () => {
         
         // Get balance
         const balance = await provider.getBalance(address);
+        const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
         
         // Authenticate with backend
         try {
@@ -46,36 +48,59 @@ export const useWallet = () => {
           // Continue without authentication for now
         }
         
+        // Store wallet info in localStorage for persistence
+        localStorage.setItem('walletAddress', address);
+        
         setWallet({
           isConnected: true,
           address: address,
-          balance: parseFloat(ethers.formatEther(balance)).toFixed(4),
-          chainId: Number(network.chainId)
+          balance: formattedBalance,
+          chainId: Number(network.chainId),
+          error: null
         });
       } catch (error) {
-        console.error('Error connecting wallet:', error);
+        const errorMessage = (error as Error).message || 'Failed to connect wallet';
+        console.error('Error connecting wallet:', errorMessage);
+        setWallet(prev => ({
+          ...prev,
+          isConnected: false,
+          error: errorMessage.includes('rejected') ? 'User rejected the connection request' : errorMessage
+        }));
       } finally {
         setIsConnecting(false);
       }
     } else {
-      alert('Please install MetaMask to use this feature');
+      setWallet(prev => ({
+        ...prev,
+        isConnected: false,
+        error: 'No wallet detected. Please install MetaMask or another Web3 wallet.'
+      }));
+      setIsConnecting(false);
     }
   };
 
   const disconnectWallet = () => {
     // Clear auth token
     localStorage.removeItem('authToken');
+    localStorage.removeItem('walletAddress');
     
     setWallet({
       isConnected: false,
       address: null,
       balance: null,
-      chainId: null
+      chainId: null,
+      error: null
     });
   };
 
   useEffect(() => {
     if (typeof window.ethereum !== 'undefined') {
+      // Check if we have a stored wallet address and try to reconnect
+      const storedAddress = localStorage.getItem('walletAddress');
+      if (storedAddress && !wallet.isConnected && !isConnecting) {
+        connectWallet().catch(err => console.error('Auto-reconnect failed:', err));
+      }
+      
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
           disconnectWallet();
@@ -95,6 +120,7 @@ export const useWallet = () => {
           return {
           ...prev,
           chainId: numericChainId
+          // Don't update balance here as we'll do that in a separate effect
           };
         });
         
@@ -110,7 +136,33 @@ export const useWallet = () => {
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       };
     }
-  }, []);
+  }, [wallet.isConnected, isConnecting]);
+  
+  // Update balance periodically when connected
+  useEffect(() => {
+    if (!wallet.isConnected || !wallet.address) return;
+    
+    const updateBalance = async () => {
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const balance = await provider.getBalance(wallet.address);
+        const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
+        
+        setWallet(prev => ({
+          ...prev,
+          balance: formattedBalance
+        }));
+      } catch (error) {
+        console.error('Error updating balance:', error);
+      }
+    };
+    
+    // Update immediately and then every 30 seconds
+    updateBalance();
+    const interval = setInterval(updateBalance, 30000);
+    
+    return () => clearInterval(interval);
+  }, [wallet.isConnected, wallet.address]);
 
   return {
     ...wallet,

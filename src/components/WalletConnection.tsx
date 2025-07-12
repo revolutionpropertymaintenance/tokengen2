@@ -1,10 +1,10 @@
 import React from 'react';
-import { Wallet, LogOut, Loader2 } from 'lucide-react';
+import { Wallet, LogOut, Loader2, AlertCircle } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { web3Service } from '../services/web3Service';
 
 export const WalletConnection: React.FC = () => {
-  const { isConnected, address, balance, connectWallet, disconnectWallet, isConnecting } = useWallet();
+  const { isConnected, address, balance, connectWallet, disconnectWallet, isConnecting, error } = useWallet();
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -29,6 +29,24 @@ export const WalletConnection: React.FC = () => {
           className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
         >
           <LogOut className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center space-x-2">
+        <div className="text-red-400 text-xs mr-2">
+          <AlertCircle className="w-4 h-4 inline mr-1" />
+          <span>{error.length > 30 ? error.slice(0, 30) + '...' : error}</span>
+        </div>
+        <button
+          onClick={connectWallet}
+          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2"
+        >
+          <Wallet className="w-4 h-4" />
+          <span>Retry</span>
         </button>
       </div>
     );

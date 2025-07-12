@@ -22,20 +22,24 @@ interface ESRTokenHook {
 export const useESRToken = (): ESRTokenHook => {
   const [balance, setBalance] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const checkBalance = useCallback(async (address: string) => {
     if (!address) {
       setBalance(0);
+      setError(null);
       return;
     }
     
     if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
       console.warn('ESR Token address not configured');
       setBalance(0);
+      setError('ESR Token address not configured');
       return;
     }
 
     setIsLoading(true);
+    setError(null);
     try {
       const provider = web3Service.getProvider();
       if (!provider) {
@@ -57,8 +61,15 @@ export const useESRToken = (): ESRTokenHook => {
       
       console.log(`ESR Balance for ${address}: ${formattedBalance} ESR`);
     } catch (error) {
-      console.error('Error checking ESR balance:', error);
+      const errorMessage = (error as Error).message || 'Unknown error';
+      console.error('Error checking ESR balance:', errorMessage);
       setBalance(0);
+      
+      // Set a user-friendly error message
+      setError(
+        errorMessage.includes('network') ? 'Network error. Please check your connection.' :
+        'Failed to check ESR balance. Please try again later.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -68,6 +79,7 @@ export const useESRToken = (): ESRTokenHook => {
     if (!address) {
       throw new Error('Wallet not connected');
     }
+    setError(null);
     
     if (ESR_TOKEN_ADDRESS === '0x0000000000000000000000000000000000000000') {
       throw new Error('ESR Token address not configured');
@@ -77,6 +89,7 @@ export const useESRToken = (): ESRTokenHook => {
       const signer = web3Service.getSigner();
       if (!signer) {
         throw new Error('Signer not available');
+        setError('Wallet connection issue. Please reconnect your wallet.');
       }
       
       // Create ESR token contract instance with signer
@@ -90,7 +103,8 @@ export const useESRToken = (): ESRTokenHook => {
       
       // Check current balance
       const currentBalance = await esrContract.balanceOf(address);
-      if (currentBalance < amountWei) {
+      const formattedBalance = ethers.formatUnits(currentBalance, decimals);
+      if (parseFloat(formattedBalance) < amount) {
         throw new Error(`Insufficient ESR balance. Required: ${amount} ESR, Available: ${ethers.formatUnits(currentBalance, decimals)} ESR`);
       }
       
@@ -98,6 +112,7 @@ export const useESRToken = (): ESRTokenHook => {
       
       // Transfer ESR tokens to platform wallet
       const tx = await esrContract.transfer(PLATFORM_WALLET, amountWei);
+      const txHash = tx.hash;
       
       console.log(`ESR transfer transaction sent: ${tx.hash}`);
       
@@ -107,14 +122,26 @@ export const useESRToken = (): ESRTokenHook => {
       if (receipt.status === 1) {
         console.log(`ESR transfer confirmed in block ${receipt.blockNumber}`);
         
+        // Notify backend about the transaction
+        try {
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/esr/deduct`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount, txHash })
+          });
+        } catch (apiError) {
+          console.error('Failed to notify backend about ESR deduction:', apiError);
+        }
+        
         // Update balance after successful transaction
         setTimeout(() => {
           checkBalance(address);
         }, 2000);
+        
+        return txHash;
       } else {
         throw new Error('ESR transfer transaction failed');
-      }
-      
+      }      
     } catch (error) {
       console.error('Error deducting ESR tokens:', error);
       throw error;
@@ -124,6 +151,7 @@ export const useESRToken = (): ESRTokenHook => {
   return {
     balance,
     isLoading,
+    error,
     checkBalance,
     deductTokens
   };
