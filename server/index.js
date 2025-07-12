@@ -45,9 +45,9 @@ app.use('/deployments', express.static(path.join(__dirname, '..', 'deployments')
 
 // Connect to database
 connectDB().then(() => {
-  console.log('MongoDB connected successfully');
+  console.log('Database connected successfully');
 }).catch(err => {
-  console.error('MongoDB connection error:', err);
+  console.error('Database connection error:', err);
 });
 
 // Error handling middleware

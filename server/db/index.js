@@ -23,12 +23,8 @@ const connectDB = async () => {
   } catch (error) {
     console.error(`Error connecting to PostgreSQL: ${error.message}`);
     // Retry logic with exponential backoff
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Retrying connection in 5 seconds...');
-      setTimeout(() => connectDB(), 5000);
-    } else {
-      process.exit(1);
-    }
+    console.log('Retrying connection in 5 seconds...');
+    setTimeout(() => connectDB(), 5000);
   }
 };
 
