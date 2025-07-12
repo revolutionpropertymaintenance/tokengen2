@@ -17,6 +17,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
   const { isTestnetMode } = useNetworkMode();
   const { chainId, isNetworkMismatch, switchToNetwork, isAttemptingSwitch, switchError } = useWallet(); 
   const { toggleMode } = useNetworkMode();
+  
   const [config, setConfig] = useState<TokenConfig>({
     name: '',
     symbol: '',
@@ -267,6 +268,34 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
           {/* Network Selection */}
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10">
             <h2 className="text-xl font-semibold text-white mb-6">Network Selection</h2>
+
+            {/* Network Mode Selector */}
+            <div className="p-4 bg-white/5 rounded-lg border border-white/10 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-white font-medium mb-1">Network Mode</h4>
+                  <p className="text-sm text-gray-300">
+                    {isTestnetMode 
+                      ? 'Testnet mode is active - deploy for free on test networks' 
+                      : 'Mainnet mode is active - deploy on production networks (requires ESR tokens)'}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-gray-300">{isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
+                  <button
+                    onClick={toggleMode}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      isTestnetMode ? 'bg-green-500' : 'bg-blue-600'
+                    }`}
+                    title={isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}
+                  >
+                    <span className="sr-only">{isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}</span>
+                    <span className={`${isTestnetMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               {filteredNetworks.map((network) => (
@@ -301,12 +330,9 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                     ? 'bg-amber-500/20 border border-amber-500/50' 
                     : 'bg-blue-500/20 border border-blue-500/50'
                 }`}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 justify-center">
                     <span className={isTestnetMode ? 'text-amber-400' : 'text-blue-400'}>
                       {isTestnetMode ? '⚠️ Testnet Mode Active' : '🔵 Mainnet Mode Active'}
-                    </span>
-                    <span className="text-sm text-gray-300">
-                      (Toggle in header to change)
                     </span>
                   </div>
                 </div>
@@ -485,34 +511,6 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
                     onChange={(e) => updateConfig({ useFactory: e.target.checked })}
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Network Mode Selector */}
-          <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-white font-medium mb-1">Network Mode</h4>
-                <p className="text-sm text-gray-300">
-                  {isTestnetMode 
-                    ? 'Testnet mode is active - deploy for free on test networks' 
-                    : 'Mainnet mode is active - deploy on production networks (requires ESR tokens)'}
-                </p>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-300">{isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
-                <button
-                  onClick={toggleMode}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                    isTestnetMode ? 'bg-green-500' : 'bg-blue-600'
-                  }`}
-                  title={isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}
-                >
-                  <span className="sr-only">{isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}</span>
-                  <span className={`${isTestnetMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                  />
-                </button>
               </div>
             </div>
           </div>
