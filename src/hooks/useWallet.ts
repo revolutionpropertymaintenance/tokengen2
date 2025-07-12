@@ -65,19 +65,23 @@ export const useWallet = () => {
           web3Service.disconnect();
           disconnectWallet();
         } else {
-          setWallet(prev => ({
+          setWallet(prev => {
+            return {
             ...prev,
             address: accounts[0]
-          }));
+            };
+          });
         }
       };
 
       const handleChainChanged = (chainId: string) => {
         const numericChainId = parseInt(chainId, 16);
-        setWallet(prev => ({
+        setWallet(prev => {
+          return {
           ...prev,
           chainId: numericChainId
-        }));
+          };
+        });
         
         // Refresh page on chain change to ensure all data is updated
         window.location.reload();

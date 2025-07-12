@@ -11,7 +11,6 @@ import {
   Lock,
   Calendar
 } from 'lucide-react';
-import { useEffect } from 'react';
 import { contractService } from '../services/contractService';
 
 interface PublicSale {
