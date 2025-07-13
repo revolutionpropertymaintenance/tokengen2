@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { formatEther } from 'ethers';
 import { 
   CHAIN_CONFIG, 
   getMainnetChainIds, 
@@ -131,7 +132,7 @@ export const useWallet = () => {
       const address = await signer.getAddress();
       const network = await provider.getNetwork();
       const balance = await provider.getBalance(address);
-      const formattedBalance = parseFloat(web3Service.formatEther(balance)).toFixed(4);
+      const formattedBalance = parseFloat(formatEther(balance)).toFixed(4);
       const chainId = Number(network.chainId);
       
       setWallet(prev => ({
