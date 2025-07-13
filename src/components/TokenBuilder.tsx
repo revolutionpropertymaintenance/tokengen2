@@ -48,6 +48,43 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
   const [showNetworkModal, setShowNetworkModal] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
+  // Helper functions for network display
+  const getNetworkIcon = (networkId: string) => {
+    const icons: Record<string, string> = {
+      'ethereum': '🔷',
+      'bsc': '🟡',
+      'polygon': '🟣',
+      'arbitrum': '🔵',
+      'fantom': '🌟',
+      'avalanche': '🔺',
+      'cronos': '⚡',
+      'core': '🔘',
+      'dogechain': '🐕',
+      'pulsechain': '💗',
+      'zetachain': '🔗',
+      'unichain': '🦄',
+      'bitrock': '🪨',
+      'alveychain': '🧝',
+      'opengpu': '🖥️',
+      'base': '🔵',
+      'estar-testnet': '⚡',
+      'goerli': '🔷',
+      'bsc-testnet': '🟡',
+      'mumbai': '🟣',
+      'arbitrum-sepolia': '🔵',
+      'fantom-testnet': '🌟',
+      'avalanche-fuji': '🔺',
+      'cronos-testnet': '⚡',
+      'bitrock-testnet': '🪨'
+    };
+    return icons[networkId] || '🌐';
+  };
+
+  const getDeploymentCost = (network: Network) => {
+    if (isTestnetMode) return 'Free';
+    return network.gasPrice.includes('$') ? network.gasPrice.split('(')[1]?.replace(')', '') || '$25' : '$25';
+  };
+  
   // Update network when testnet mode changes
   useEffect(() => {
     if (isTestnetMode && !config.network.id.includes('testnet')) {
@@ -270,11 +307,25 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10">
             <h2 className="text-xl font-semibold text-white mb-6">Network Selection</h2>
 
-            <NetworkSelector 
-              selectedNetwork={config.network}
-              onNetworkSelect={handleNetworkSelect}
-              className="mb-6"
-            />
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+              {filteredNetworks.map((network) => (
+                <div
+                  key={network.id}
+                  className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                    config.network.id === network.id
+                      ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                      : 'border-white/20 bg-white/5 text-gray-300 hover:border-white/40'
+                  }`}
+                  onClick={() => handleNetworkSelect(network)}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-1">{getNetworkIcon(network.id)}</div>
+                    <div className="text-xs font-medium">{network.name}</div>
+                    <div className="text-xs opacity-75">{getDeploymentCost(network)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
             
             {gasEstimate && (
               <>
