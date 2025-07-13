@@ -193,7 +193,7 @@ export const testnets: Network[] = [
     rpcUrl: SELF_HOSTED_RPC[421614],
     explorerUrl: 'https://sepolia.arbiscan.io',
     gasPrice: '0.0001 ETH (~$0.00)'
-  }
+  },
   {
     id: 'fantom-testnet',
     name: 'Fantom Testnet',
