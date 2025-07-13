@@ -13,7 +13,7 @@ import {
   FileText
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { parse } from 'csv-parse/sync';
+import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
 import { ethers } from 'ethers';
 import { useWallet } from '../hooks/useWallet';
@@ -198,12 +198,11 @@ export const Airdrop: React.FC = () => {
     reader.onload = () => {
       try {
         const csvData = reader.result as string;
-        const records = parse(csvData, {
-          columns: false,
-          skip_empty_lines: true
+        const results = Papa.parse(csvData, {
+          skipEmptyLines: true
         });
         
-        const newRecipients: AirdropRecipient[] = records.map((record: any) => {
+        const newRecipients: AirdropRecipient[] = results.data.map((record: any) => {
           const address = record[0]?.trim();
           const amount = record[1]?.toString().trim();
           
