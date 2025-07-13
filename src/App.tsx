@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { TokenBuilder } from './components/TokenBuilder';
 import { VestingConfiguration } from './components/VestingConfiguration';
