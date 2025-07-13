@@ -9,6 +9,8 @@ interface LandingPageProps {
   onViewSales: () => void;
   onViewTokens: () => void;
   onExploreSales?: () => void;
+  onLiquidityLock?: () => void;
+  onAirdrop?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ 
@@ -16,7 +18,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onLaunchSale, 
   onViewSales, 
   onViewTokens,
-  onExploreSales
+  onExploreSales,
+  onLiquidityLock,
+  onAirdrop
 }) => {
   const { isConnected } = useWallet();
   
@@ -53,7 +57,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     'Transfer Fees & Taxes',
     'Holder Redistribution',
     'Token Vesting & Locking',
-    'Automatic Verification'
+    'Automatic Verification',
+    'Liquidity Locking',
+    'Auto-DEX Listing'
   ];
 
   return (
@@ -89,6 +95,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   Explore Sales
+                </button>
+              )}
+              {onLiquidityLock && (
+                <button
+                  onClick={onLiquidityLock}
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Liquidity Lock
+                </button>
+              )}
+              {onAirdrop && (
+                <button
+                  onClick={onAirdrop}
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Airdrop Tool
                 </button>
               )}
             </nav>
@@ -239,6 +261,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <span className="text-white">{feature}</span>
                     </div>
                   ))}
+                  {onLiquidityLock && (
+                    <button
+                      onClick={onLiquidityLock}
+                      className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                    >
+                      Lock Liquidity →
+                    </button>
+                  )}
+                  {onAirdrop && (
+                    <button
+                      onClick={onAirdrop}
+                      className="text-pink-400 hover:text-pink-300 font-medium transition-colors"
+                    >
+                      Airdrop Tool →
+                    </button>
+                  )}
                 </div>
               </div>
               

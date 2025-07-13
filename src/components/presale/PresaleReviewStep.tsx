@@ -28,6 +28,7 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
     timeEstimate: '1-3 minutes'
   });
   const [showNetworkModal, setShowNetworkModal] = useState(false);
+  const [showAutoListingPreview, setShowAutoListingPreview] = useState(false);
 
   // Fetch real gas estimate on component mount
   useEffect(() => {
@@ -367,6 +368,43 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
                 </div>
               </div>
             </div>
+            
+            {/* Auto-Listing Preview */}
+            {config.autoListingConfig?.enabled && (
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                <h3 className="text-lg font-semibold text-white mb-4">Auto-Listing Configuration</h3>
+                
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Listing Price</span>
+                    <span className="text-white font-medium">
+                      {config.autoListingConfig.listingPrice} {config.tokenInfo.tokenSymbol} per {config.network.symbol}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">LP Token %</span>
+                    <span className="text-white font-medium">{config.autoListingConfig.lpTokenPercentage}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">LP Base Token %</span>
+                    <span className="text-white font-medium">{config.autoListingConfig.lpBaseTokenPercentage}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Lock Duration</span>
+                    <span className="text-white font-medium">{config.autoListingConfig.lockDuration} days</span>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-green-500/20 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                    <span className="text-green-400 text-sm">
+                      Auto-listing will be triggered after successful presale
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Features */}

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Clock, 
   Users, 
-  DollarSign, 
+  DollarSign,
+  AlertOctagon,
   Target, 
   ExternalLink, 
   Wallet, 
@@ -15,11 +16,13 @@ import {
   Percent,
   Globe,
   Lock,
+  Share2,
   ArrowLeft
 } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { useSaleContract } from '../hooks/useSaleContract';
 import { WalletConnection } from './WalletConnection';
+import { ReferralSystem } from './presale/ReferralSystem';
 
 interface SalePageProps {
   contractAddress: string;
@@ -41,8 +44,10 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
+  const [isEmergencyWithdrawing, setIsEmergencyWithdrawing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'buyers'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'buyers' | 'referral'>('overview');
+  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
   useEffect(() => {
     loadSaleData();
@@ -135,6 +140,23 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
     }
   };
 
+  const handleEmergencyWithdraw = async () => {
+    if (!isConnected) return;
+    
+    setIsEmergencyWithdrawing(true);
+    
+    try {
+      await saleContract.emergencyWithdraw();
+      await loadSaleData();
+      await loadUserInfo(address!);
+      setShowEmergencyModal(false);
+    } catch (error) {
+      console.error('Emergency withdraw failed:', error);
+    } finally {
+      setIsEmergencyWithdrawing(false);
+    }
+  };
+
   const canPurchase = () => {
     if (!isConnected || !saleData) return false;
     if (getSaleStatus() !== 'live') return false;
@@ -154,6 +176,22 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
       claimedTokens,
       claimableTokens,
       vestingProgress: totalTokens > 0 ? (claimedTokens / totalTokens) * 100 : 0
+    };
+  };
+
+  // Calculate emergency withdraw penalty and refund
+  const calculateEmergencyWithdraw = () => {
+    if (!userInfo) return { contribution: '0', penalty: '0', refund: '0' };
+    
+    const contribution = parseFloat(userInfo.contribution);
+    const penaltyRate = 0.1; // 10% penalty
+    const penalty = contribution * penaltyRate;
+    const refund = contribution - penalty;
+    
+    return {
+      contribution: contribution.toFixed(6),
+      penalty: penalty.toFixed(6),
+      refund: refund.toFixed(6)
     };
   };
 
@@ -213,6 +251,37 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
             </div>
             <WalletConnection />
           </div>
+          
+          {/* Tab Navigation */}
+          <div className="mt-6">
+            <div className="flex space-x-1">
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'overview' ? 'bg-blue-500 text-white' : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Overview
+              </button>
+              <button
+                onClick={() => setActiveTab('buyers')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'buyers' ? 'bg-blue-500 text-white' : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Participants
+              </button>
+              <button
+                onClick={() => setActiveTab('referral')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'referral' ? 'bg-blue-500 text-white' : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <Share2 className="w-4 h-4 inline mr-1" />
+                Invite & Earn
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -220,234 +289,280 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Sale Status Banner */}
-            <div className={`rounded-xl p-6 border ${
-              status === 'live' 
-                ? 'bg-green-500/20 border-green-500/50' 
-                : status === 'upcoming'
-                ? 'bg-blue-500/20 border-blue-500/50'
-                : 'bg-gray-500/20 border-gray-500/50'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(status)}`}>
-                    {status === 'live' ? 'Live Now' : status === 'upcoming' ? 'Upcoming' : 'Ended'}
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                {/* Sale Status Banner */}
+                <div className={`rounded-xl p-6 border ${
+                  status === 'live' 
+                    ? 'bg-green-500/20 border-green-500/50' 
+                    : status === 'upcoming'
+                    ? 'bg-blue-500/20 border-blue-500/50'
+                    : 'bg-gray-500/20 border-gray-500/50'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(status)}`}>
+                        {status === 'live' ? 'Live Now' : status === 'upcoming' ? 'Upcoming' : 'Ended'}
+                      </div>
+                      <span className="text-white font-medium">
+                        {saleData.saleType === 'private' ? 'Private Sale' : 'Public Presale'}
+                      </span>
+                    </div>
+                    
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-white">
+                        {status === 'upcoming' 
+                          ? formatTimeRemaining(saleData.startTime)
+                          : status === 'live'
+                          ? formatTimeRemaining(saleData.endTime)
+                          : 'Sale Ended'
+                        }
+                      </div>
+                      <div className="text-sm text-gray-300">
+                        {status === 'upcoming' ? 'Until Start' : status === 'live' ? 'Remaining' : ''}
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-white font-medium">
-                    {saleData.saleType === 'private' ? 'Private Sale' : 'Public Presale'}
-                  </span>
                 </div>
-                
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-white">
-                    {status === 'upcoming' 
-                      ? formatTimeRemaining(saleData.startTime)
-                      : status === 'live'
-                      ? formatTimeRemaining(saleData.endTime)
-                      : 'Sale Ended'
-                    }
-                  </div>
-                  <div className="text-sm text-gray-300">
-                    {status === 'upcoming' ? 'Until Start' : status === 'live' ? 'Remaining' : ''}
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Access Control Warning */}
-            {saleData.saleType === 'private' && isConnected && !isWhitelisted && (
-              <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-6">
-                <div className="flex items-start space-x-3">
-                  <Shield className="w-5 h-5 text-red-400 mt-0.5" />
-                  <div>
-                    <h3 className="font-medium text-red-400 mb-1">Access Restricted</h3>
-                    <p className="text-red-300 text-sm">
-                      You are not whitelisted for this private sale. Only approved wallets can participate.
-                    </p>
+                {/* Access Control Warning */}
+                {saleData.saleType === 'private' && isConnected && !isWhitelisted && (
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-6">
+                    <div className="flex items-start space-x-3">
+                      <Shield className="w-5 h-5 text-red-400 mt-0.5" />
+                      <div>
+                        <h3 className="font-medium text-red-400 mb-1">Access Restricted</h3>
+                        <p className="text-red-300 text-sm">
+                          You are not whitelisted for this private sale. Only approved wallets can participate.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sale Progress */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h2 className="text-xl font-semibold text-white mb-4">Sale Progress</h2>
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-300">Progress</span>
+                      <span className="text-white">{getProgressPercentage().toFixed(1)}%</span>
+                    </div>
+                    
+                    <div className="w-full bg-gray-700 rounded-full h-3">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
+                        style={{ width: `${getProgressPercentage()}%` }}
+                      ></div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">
+                          {parseFloat(saleData.totalRaised).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-300">Raised ({saleData.networkSymbol})</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">
+                          {parseFloat(saleData.hardCap).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-300">Hard Cap ({saleData.networkSymbol})</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sale Details */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h2 className="text-xl font-semibold text-white mb-4">Sale Details</h2>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Token Price</span>
+                        <span className="text-white font-medium">
+                          {saleData.tokenPrice} {saleData.tokenSymbol} per {saleData.networkSymbol}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Soft Cap</span>
+                        <span className="text-white font-medium">
+                          {saleData.softCap} {saleData.networkSymbol}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Hard Cap</span>
+                        <span className="text-white font-medium">
+                          {saleData.hardCap} {saleData.networkSymbol}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Participants</span>
+                        <span className="text-white font-medium">{saleData.totalParticipants}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Min Purchase</span>
+                        <span className="text-white font-medium">
+                          {saleData.minPurchase} {saleData.networkSymbol}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Max Purchase</span>
+                        <span className="text-white font-medium">
+                          {saleData.maxPurchase} {saleData.networkSymbol}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Start Date</span>
+                        <span className="text-white font-medium">
+                          {new Date(saleData.startTime * 1000).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">End Date</span>
+                        <span className="text-white font-medium">
+                          {new Date(saleData.endTime * 1000).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Token Contract Info */}
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                  <h2 className="text-xl font-semibold text-white mb-4">Token Information</h2>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">Token Contract</span>
+                      <div className="flex items-center space-x-2">
+                        <code className="text-white font-mono text-sm">
+                          {formatAddress(saleData.tokenAddress)}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(saleData.tokenAddress)}
+                          className="p-1 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <a
+                          href={`${saleData.explorerUrl}/token/${saleData.tokenAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-300">Sale Contract</span>
+                      <div className="flex items-center space-x-2">
+                        <code className="text-white font-mono text-sm">
+                          {formatAddress(contractAddress)}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(contractAddress)}
+                          className="p-1 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <a
+                          href={`${saleData.explorerUrl}/address/${contractAddress}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1 text-gray-400 hover:text-white transition-colors"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {copied && (
+                    <div className="mt-2 text-green-400 text-sm">Address copied to clipboard!</div>
+                  )}
+                </div>
+
+                {/* Vesting Information */}
+                {saleData.vestingEnabled && (
+                  <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                    <h2 className="text-xl font-semibold text-white mb-4">Vesting Schedule</h2>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4 text-blue-400" />
+                        <span className="text-white">Linear vesting enabled</span>
+                      </div>
+                      
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-sm text-gray-300">Initial Release</div>
+                          <div className="text-white font-medium">{saleData.initialRelease}% at TGE</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-300">Vesting Duration</div>
+                          <div className="text-white font-medium">{saleData.vestingDuration} days</div>
+                        </div>
+                      </div>
+                      
+                      <div className="p-3 bg-blue-500/20 rounded-lg">
+                        <p className="text-blue-300 text-sm">
+                          Tokens will be released gradually over the vesting period after the sale ends.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Emergency Withdraw Button (only during active sale) */}
+                {status === 'live' && userInfo && parseFloat(userInfo.contribution) > 0 && (
+                  <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-6">
+                    <div className="flex items-start space-x-3">
+                      <AlertOctagon className="w-5 h-5 text-red-400 mt-0.5" />
+                      <div>
+                        <h3 className="font-medium text-red-400 mb-1">Emergency Withdraw</h3>
+                        <p className="text-red-300 text-sm mb-3">
+                          You can withdraw your contribution before the sale ends, but a 10% penalty will be applied.
+                        </p>
+                        <button
+                          onClick={() => setShowEmergencyModal(true)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Emergency Withdraw
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {activeTab === 'buyers' && (
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+                <h2 className="text-xl font-semibold text-white mb-4">Recent Participants</h2>
+                <div className="space-y-3">
+                  {/* This would be populated with actual buyer data */}
+                  <div className="text-center py-8">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-300">Participant data will be displayed here</p>
                   </div>
                 </div>
               </div>
             )}
-
-            {/* Sale Progress */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <h2 className="text-xl font-semibold text-white mb-4">Sale Progress</h2>
-              
-              <div className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-300">Progress</span>
-                  <span className="text-white">{getProgressPercentage().toFixed(1)}%</span>
-                </div>
-                
-                <div className="w-full bg-gray-700 rounded-full h-3">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${getProgressPercentage()}%` }}
-                  ></div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white">
-                      {parseFloat(saleData.totalRaised).toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-300">Raised ({saleData.networkSymbol})</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-white">
-                      {parseFloat(saleData.hardCap).toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-300">Hard Cap ({saleData.networkSymbol})</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sale Details */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <h2 className="text-xl font-semibold text-white mb-4">Sale Details</h2>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Token Price</span>
-                    <span className="text-white font-medium">
-                      {saleData.tokenPrice} {saleData.tokenSymbol} per {saleData.networkSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Soft Cap</span>
-                    <span className="text-white font-medium">
-                      {saleData.softCap} {saleData.networkSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Hard Cap</span>
-                    <span className="text-white font-medium">
-                      {saleData.hardCap} {saleData.networkSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Participants</span>
-                    <span className="text-white font-medium">{saleData.totalParticipants}</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Min Purchase</span>
-                    <span className="text-white font-medium">
-                      {saleData.minPurchase} {saleData.networkSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Max Purchase</span>
-                    <span className="text-white font-medium">
-                      {saleData.maxPurchase} {saleData.networkSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Start Date</span>
-                    <span className="text-white font-medium">
-                      {new Date(saleData.startTime * 1000).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">End Date</span>
-                    <span className="text-white font-medium">
-                      {new Date(saleData.endTime * 1000).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Token Contract Info */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-              <h2 className="text-xl font-semibold text-white mb-4">Token Information</h2>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Token Contract</span>
-                  <div className="flex items-center space-x-2">
-                    <code className="text-white font-mono text-sm">
-                      {formatAddress(saleData.tokenAddress)}
-                    </code>
-                    <button
-                      onClick={() => copyToClipboard(saleData.tokenAddress)}
-                      className="p-1 text-gray-400 hover:text-white transition-colors"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <a
-                      href={`${saleData.explorerUrl}/token/${saleData.tokenAddress}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1 text-gray-400 hover:text-white transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Sale Contract</span>
-                  <div className="flex items-center space-x-2">
-                    <code className="text-white font-mono text-sm">
-                      {formatAddress(contractAddress)}
-                    </code>
-                    <button
-                      onClick={() => copyToClipboard(contractAddress)}
-                      className="p-1 text-gray-400 hover:text-white transition-colors"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <a
-                      href={`${saleData.explorerUrl}/address/${contractAddress}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1 text-gray-400 hover:text-white transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-              
-              {copied && (
-                <div className="mt-2 text-green-400 text-sm">Address copied to clipboard!</div>
-              )}
-            </div>
-
-            {/* Vesting Information */}
-            {saleData.vestingEnabled && (
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-                <h2 className="text-xl font-semibold text-white mb-4">Vesting Schedule</h2>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-blue-400" />
-                    <span className="text-white">Linear vesting enabled</span>
-                  </div>
-                  
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-sm text-gray-300">Initial Release</div>
-                      <div className="text-white font-medium">{saleData.initialRelease}% at TGE</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-300">Vesting Duration</div>
-                      <div className="text-white font-medium">{saleData.vestingDuration} days</div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-blue-500/20 rounded-lg">
-                    <p className="text-blue-300 text-sm">
-                      Tokens will be released gradually over the vesting period after the sale ends.
-                    </p>
-                  </div>
-                </div>
-              </div>
+            
+            {activeTab === 'referral' && (
+              <ReferralSystem 
+                presaleAddress={contractAddress}
+                referralTrackerAddress="0x742d35Cc6634C0532925a3b8D4C9db96590c6C8C" // Replace with actual address
+                baseTokenSymbol={saleData.networkSymbol}
+              />
             )}
           </div>
 
@@ -604,6 +719,72 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
           </div>
         </div>
       </div>
+      
+      {/* Emergency Withdraw Modal */}
+      {showEmergencyModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 rounded-xl p-6 border border-white/10 max-w-md w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                <AlertOctagon className="w-5 h-5 text-red-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-white">Emergency Withdraw</h3>
+            </div>
+            
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to emergency withdraw your contribution? A 10% penalty will be applied.
+            </p>
+            
+            {userInfo && (
+              <div className="bg-white/5 rounded-lg p-4 mb-6">
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <div className="text-sm text-gray-300">Your Contribution</div>
+                    <div className="text-white font-medium">
+                      {calculateEmergencyWithdraw().contribution} {saleData.networkSymbol}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-300">Penalty (10%)</div>
+                    <div className="text-red-400 font-medium">
+                      {calculateEmergencyWithdraw().penalty} {saleData.networkSymbol}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-300">You Receive</div>
+                    <div className="text-green-400 font-medium">
+                      {calculateEmergencyWithdraw().refund} {saleData.networkSymbol}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowEmergencyModal(false)}
+                className="flex-1 px-4 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEmergencyWithdraw}
+                disabled={isEmergencyWithdrawing}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {isEmergencyWithdrawing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>Confirm Withdraw</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

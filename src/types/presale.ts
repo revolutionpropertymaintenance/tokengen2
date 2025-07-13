@@ -24,6 +24,13 @@ export interface PresaleConfig {
     duration: number; // in days
     initialRelease: number; // percentage released at TGE
   };
+  autoListingConfig?: {
+    enabled: boolean;
+    listingPrice: string; // tokens per 1 base token
+    lpTokenPercentage: number; // percentage of tokens for LP (0-100)
+    lpBaseTokenPercentage: number; // percentage of base tokens for LP (0-100)
+    lockDuration: number; // in days
+  };
   walletSetup: {
     saleReceiver: string;
     refundWallet: string;
@@ -45,6 +52,7 @@ export interface PresaleDeploymentResult {
   gasUsed: string;
   deploymentCost: string;
   salePageUrl: string;
+  lpTokenAddress?: string;
 }
 
 export interface SaleParticipant {
@@ -55,4 +63,4 @@ export interface SaleParticipant {
   isWhitelisted: boolean;
 }
 
-export type PresaleStep = 'type' | 'token' | 'config' | 'vesting' | 'wallet' | 'review' | 'success';
+export type PresaleStep = 'type' | 'token' | 'config' | 'vesting' | 'autoListing' | 'wallet' | 'review' | 'success';

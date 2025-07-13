@@ -10,6 +10,8 @@ import { DeployedTokens } from './components/DeployedTokens';
 import { SaleRouter } from './components/SaleRouter';
 import { SaleExplorer } from './components/SaleExplorer';
 import { TokenManagement } from './components/TokenManagement';
+import { LiquidityLock } from './components/LiquidityLock';
+import { Airdrop } from './components/Airdrop';
 import { NotFound } from './components/NotFound';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -23,7 +25,7 @@ declare global {
 
 function App() {
   const { isTestnetMode } = useNetworkMode();
-  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage'>('landing');
+  const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage' | 'liquidity-lock' | 'airdrop'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
 
@@ -45,6 +47,14 @@ function App() {
 
   const handleExploreSales = () => {
     setCurrentStep('explore');
+  };
+  
+  const handleLiquidityLock = () => {
+    setCurrentStep('liquidity-lock');
+  };
+  
+  const handleAirdrop = () => {
+    setCurrentStep('airdrop');
   };
 
   const handleTokenConfigComplete = (config: TokenConfig) => {
@@ -92,7 +102,11 @@ function App() {
           onLaunchSale={handleLaunchSale}
           onViewSales={handleViewSales}
           onViewTokens={handleViewTokens}
-          onExploreSales={handleExploreSales}
+          onExploreSales={handleExploreSales} 
+          onLiquidityLock={handleLiquidityLock}
+          onAirdrop={handleAirdrop}
+          onLiquidityLock={handleLiquidityLock}
+          onAirdrop={handleAirdrop}
         />
       );
     
@@ -153,12 +167,18 @@ function App() {
     case 'manage':
       return <TokenManagement />;
     
+    case 'liquidity-lock':
+      return <LiquidityLock />;
+      
+    case 'airdrop':
+      return <Airdrop />;
+    
     case '404':
       return <NotFound />;
     
     default:
       // Check if this is a valid route
-      const validRoutes = ['landing', 'builder', 'vesting', 'review', 'success', 'presale', 'sales', 'tokens', 'sale', 'explore', 'manage'];
+      const validRoutes = ['landing', 'builder', 'vesting', 'review', 'success', 'presale', 'sales', 'tokens', 'sale', 'explore', 'manage', 'liquidity-lock', 'airdrop'];
       if (!validRoutes.includes(currentStep)) {
         return <NotFound />;
       } else {
