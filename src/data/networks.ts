@@ -55,7 +55,7 @@ export const mainnets: Network[] = [
     rpcUrl: SELF_HOSTED_RPC[43114],
     explorerUrl: 'https://snowtrace.io',
     gasPrice: '0.025 AVAX (~$0.75)'
-  }
+  },
   {
     id: 'cronos',
     name: 'Cronos',
