@@ -151,6 +151,7 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 }`}>
                   {activeTab === 'testnet' ? 'Free (Testnet)' : '100 ESR + Gas'}
                 </div>
+              </div>
               <a 
                 href={`${token.network.explorerUrl}/token/${token.address}`}
                 target="_blank" 
