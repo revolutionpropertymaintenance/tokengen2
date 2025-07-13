@@ -1,7 +1,8 @@
 import React from 'react';
-import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star } from 'lucide-react';
+import { ArrowRight, Shield, Zap, Globe, CheckCircle, Star, Layers } from 'lucide-react';
 import { WalletConnection } from './WalletConnection';
 import { useWallet } from '../hooks/useWallet';
+import { NetworkModeToggle } from './NetworkModeToggle';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -114,6 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </button>
               )}
             </nav>
+            <NetworkModeToggle />
             <WalletConnection />
           </div>
         </div>
@@ -222,19 +224,56 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <section className="px-6 py-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h3 className="text-3xl font-bold text-white mb-4">
-              Deploy Across Leading Networks
-            </h3>
+            <div className="flex items-center justify-center space-x-3 mb-4">
+              <Layers className="w-8 h-8 text-blue-400" />
+              <h3 className="text-3xl font-bold text-white">
+                Deploy Across 25+ Networks
+              </h3>
+            </div>
             <p className="text-gray-300 text-lg">
               Choose from multiple blockchain networks with competitive deployment costs
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
-            {networks.map((network, index) => (
-              <div key={index} className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
-                <div className="text-3xl mb-3">{network.logo}</div>
-                <h4 className="text-white font-medium">{network.name}</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {[
+              { name: 'Ethereum', logo: '🔷' },
+              { name: 'BSC', logo: '🟡' },
+              { name: 'Polygon', logo: '🟣' },
+              { name: 'Arbitrum', logo: '🔵' },
+              { name: 'Fantom', logo: '🌟' },
+              { name: 'Avalanche', logo: '🔺' },
+              { name: 'Cronos', logo: '⚡' },
+              { name: 'Core', logo: '🔘' },
+              { name: 'DogeChain', logo: '🐕' },
+              { name: 'PulseChain', logo: '💗' },
+              { name: 'ZetaChain', logo: '🔗' },
+              { name: 'Unichain', logo: '🦄' },
+              { name: 'Bitrock', logo: '🪨' },
+              { name: 'AlveyChain', logo: '🧝' },
+              { name: 'OpenGPU', logo: '🖥️' },
+              { name: 'Base', logo: '🔵' },
+              { name: 'ESR', logo: '⚡' },
+              { name: 'Goerli', logo: '🔷', testnet: true },
+              { name: 'BSC Testnet', logo: '🟡', testnet: true },
+              { name: 'Mumbai', logo: '🟣', testnet: true },
+              { name: 'Arbitrum Sepolia', logo: '🔵', testnet: true },
+              { name: 'Fantom Testnet', logo: '🌟', testnet: true },
+              { name: 'Avalanche Fuji', logo: '🔺', testnet: true },
+              { name: 'Cronos Testnet', logo: '⚡', testnet: true },
+              { name: 'Bitrock Testnet', logo: '🪨', testnet: true }
+            ].map((network, index) => (
+              <div 
+                key={index} 
+                className={`bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 text-center ${
+                  network.testnet ? 'border-green-500/20' : ''
+                }`}
+              >
+                <div className="text-2xl mb-2">{network.logo}</div>
+                <h4 className="text-white font-medium text-sm">{network.name}</h4>
+                {network.testnet && (
+                  <span className="text-xs text-green-400">Testnet</span>
+                )}
               </div>
             ))}
           </div>

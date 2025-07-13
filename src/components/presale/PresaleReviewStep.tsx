@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Clock, DollarSign, U
 import { PresaleConfig, PresaleDeploymentResult } from '../../types/presale';
 import { ESRBalanceCheck } from '../ESRBalanceCheck';
 import { NetworkMismatchModal } from '../NetworkMismatchModal';
+import { NetworkSelector } from '../NetworkSelector';
 import { contractService } from '../../services/contractService';
 import { useNetworkMode } from '../../hooks/useNetworkMode';
 import { useWallet } from '../../hooks/useWallet';
@@ -334,11 +335,17 @@ export const PresaleReviewStep: React.FC<PresaleReviewStepProps> = ({ config, on
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
             <h3 className="text-lg font-semibold text-white mb-4">Deployment Summary</h3>
             
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Network
+              </label>
+              <NetworkSelector 
+                selectedNetwork={config.network}
+                onNetworkSelect={(network) => onNext({ ...config, network })}
+              />
+            </div>
+            
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300">Network</span>
-                <span className="text-white font-medium">{config.network.name}</span>
-              </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-300">Estimated Gas</span>
                 <span className="text-white font-medium">{gasEstimate.amount} {config.network.symbol}</span>

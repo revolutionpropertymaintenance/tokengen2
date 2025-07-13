@@ -3,6 +3,7 @@ import { Wallet, LogOut, Loader2, AlertCircle, RefreshCw, ArrowRight } from 'luc
 import { useWallet } from '../hooks/useWallet';
 import { useNetworkMode } from '../hooks/useNetworkMode';
 import { getMainnetChainIds, getTestnetChainIds } from '../config/chainConfig';
+import { NetworkModeToggle } from './NetworkModeToggle';
 
 export const WalletConnection: React.FC = () => {
   const { 
@@ -25,6 +26,7 @@ export const WalletConnection: React.FC = () => {
   
   const getNetworkName = (chainId: number | null) => {
     if (!chainId) return 'Unknown';
+      <NetworkModeToggle showLabel={true} />
     
     const networks = {
       1: 'Ethereum',
@@ -94,7 +96,7 @@ export const WalletConnection: React.FC = () => {
         </div>
         <button
           onClick={connectWallet}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2"
+          className="bg-amber-500/20 text-amber-400 px-3 py-1 rounded-lg text-xs font-medium flex items-center space-x-1 whitespace-nowrap"
         >
           <RefreshCw className="w-4 h-4" />
           <span>Retry</span>

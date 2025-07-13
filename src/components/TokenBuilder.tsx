@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
 import { networks, mainnets, testnets } from '../data/networks';
 import { NetworkMismatchModal } from './NetworkMismatchModal';
+import { NetworkSelector } from './NetworkSelector';
 import { contractService } from '../services/contractService';
 import { useNetworkMode } from '../hooks/useNetworkMode';
 import { useWallet } from '../hooks/useWallet';
@@ -269,76 +270,35 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10">
             <h2 className="text-xl font-semibold text-white mb-6">Network Selection</h2>
 
-            {/* Network Mode Selector */}
-            <div className="p-4 bg-white/5 rounded-lg border border-white/10 mb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-white font-medium mb-1">Network Mode</h4>
-                  <p className="text-sm text-gray-300">
-                    {isTestnetMode 
-                      ? 'Testnet mode is active - deploy for free on test networks' 
-                      : 'Mainnet mode is active - deploy on production networks (requires ESR tokens)'}
-                  </p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-300">{isTestnetMode ? 'Testnet' : 'Mainnet'}</span>
-                  <button
-                    onClick={toggleMode}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      isTestnetMode ? 'bg-green-500' : 'bg-blue-600'
-                    }`}
-                    title={isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}
-                  >
-                    <span className="sr-only">{isTestnetMode ? 'Switch to Mainnet Mode' : 'Switch to Testnet Mode'}</span>
-                    <span className={`${isTestnetMode ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                    />
-                  </button>
+            <NetworkSelector 
+              selectedNetwork={config.network}
+              onNetworkSelect={handleNetworkSelect}
+              className="mb-6"
+            />
+            
+            {gasEstimate && (
+              <>
+              <div className="p-3 bg-blue-500/20 rounded-lg mb-4">
+                <div className="flex items-center space-x-2">
+                  <Zap className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-400 font-medium">Estimated Deployment Cost: {gasEstimate}</span>
                 </div>
               </div>
-            </div>
-            
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-              {filteredNetworks.map((network) => (
-                <div
-                  key={network.id}
-                  className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                    config.network.id === network.id
-                      ? 'border-blue-500 bg-blue-500/20'
-                      : 'border-white/20 bg-white/5 hover:border-white/40'
-                  }`}
-                  onClick={() => handleNetworkSelect(network)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-white">{network.name}</h3>
-                    <span className="text-sm text-gray-300">{network.symbol}</span>
-                  </div>
-                  <p className="text-sm text-gray-400">Gas: {network.gasPrice}</p>
+              
+              {/* Network Mode Indicator */}
+              <div className={`p-3 rounded-lg ${
+                isTestnetMode 
+                  ? 'bg-green-500/20 border border-green-500/50' 
+                  : 'bg-blue-500/20 border border-blue-500/50'
+              }`}>
+                <div className="flex items-center space-x-2 justify-center">
+                  <span className={isTestnetMode ? 'text-green-400' : 'text-blue-400'}>
+                    {isTestnetMode ? '⚡ Testnet Mode Active - Free Deployment' : '🔵 Mainnet Mode Active - Requires ESR Tokens'}
+                  </span>
                 </div>
-              ))}
-              {gasEstimate && (
-                <>
-                <div className="md:col-span-2 lg:col-span-3 mt-4 p-3 bg-blue-500/20 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <Zap className="w-4 h-4 text-blue-400" />
-                    <span className="text-blue-400 font-medium">Estimated Deployment Cost: {gasEstimate}</span>
-                  </div>
-                </div>
-                
-                {/* Network Mode Indicator */}
-                <div className={`md:col-span-2 lg:col-span-3 p-3 rounded-lg ${
-                  isTestnetMode 
-                    ? 'bg-amber-500/20 border border-amber-500/50' 
-                    : 'bg-blue-500/20 border border-blue-500/50'
-                }`}>
-                  <div className="flex items-center space-x-2 justify-center">
-                    <span className={isTestnetMode ? 'text-amber-400' : 'text-blue-400'}>
-                      {isTestnetMode ? '⚠️ Testnet Mode Active' : '🔵 Mainnet Mode Active'}
-                    </span>
-                  </div>
-                </div>
-                </>
-              )}
-            </div>
+              </div>
+              </>
+            )}
           </div>
 
           {/* Token Features */}

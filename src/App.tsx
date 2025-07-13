@@ -16,6 +16,7 @@ import { NotFound } from './components/NotFound';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useNetworkMode } from './hooks/useNetworkMode';
+import { NetworkModeIndicator } from './components/NetworkModeIndicator';
 
 declare global {
   interface Window {
@@ -97,6 +98,7 @@ function App() {
   switch (currentStep) {
     case 'landing':
       return (
+        <>
         <LandingPage 
           onGetStarted={handleGetStarted}
           onLaunchSale={handleLaunchSale}
@@ -105,91 +107,156 @@ function App() {
           onExploreSales={handleExploreSales} 
           onLiquidityLock={handleLiquidityLock}
           onAirdrop={handleAirdrop}
-          onLiquidityLock={handleLiquidityLock}
-          onAirdrop={handleAirdrop}
         />
+        <NetworkModeIndicator />
+        </>
       );
     
     case 'builder':
       return (
+        <>
         <TokenBuilder
           onBack={goBack}
           onNext={handleTokenConfigComplete}
           initialConfig={tokenConfig || undefined}
         />
+        <NetworkModeIndicator />
+        </>
       );
     
     case 'vesting':
       return (
+        <>
         <VestingConfiguration
           config={tokenConfig!}
           onBack={goBack}
           onNext={handleVestingComplete}
         />
+        <NetworkModeIndicator />
+        </>
       );
     
     case 'review':
       return (
+        <>
         <ReviewDeploy
           config={tokenConfig!}
           onBack={goBack}
           onDeploy={handleDeploy}
         />
+        <NetworkModeIndicator />
+        </>
       );
     
     case 'success':
       return (
+        <>
         <DeploymentSuccess
           result={deploymentResult!}
           onStartNew={handleStartNew}
         />
+        <NetworkModeIndicator />
+        </>
       );
     
     case 'presale':
       return (
+        <>
         <PresaleWizard
           onBack={() => setCurrentStep('landing')}
         />
+        <NetworkModeIndicator />
+        </>
       );
     
     case 'sales':
-      return <MySales />;
+      return (
+        <>
+          <MySales />
+          <NetworkModeIndicator />
+        </>
+      );
     
     case 'tokens':
-      return <DeployedTokens />;
+      return (
+        <>
+          <DeployedTokens />
+          <NetworkModeIndicator />
+        </>
+      );
     
     case 'sale':
-      return <SaleRouter />;
+      return (
+        <>
+          <SaleRouter />
+          <NetworkModeIndicator />
+        </>
+      );
     
     case 'explore':
-      return <SaleExplorer />;
+      return (
+        <>
+          <SaleExplorer />
+          <NetworkModeIndicator />
+        </>
+      );
     
     case 'manage':
-      return <TokenManagement />;
+      return (
+        <>
+          <TokenManagement />
+          <NetworkModeIndicator />
+        </>
+      );
     
     case 'liquidity-lock':
-      return <LiquidityLock />;
+      return (
+        <>
+          <LiquidityLock />
+          <NetworkModeIndicator />
+        </>
+      );
       
     case 'airdrop':
-      return <Airdrop />;
+      return (
+        <>
+          <Airdrop />
+          <NetworkModeIndicator />
+        </>
+      );
     
     case '404':
-      return <NotFound />;
+      return (
+        <>
+          <NotFound />
+          <NetworkModeIndicator />
+        </>
+      );
     
     default:
       // Check if this is a valid route
       const validRoutes = ['landing', 'builder', 'vesting', 'review', 'success', 'presale', 'sales', 'tokens', 'sale', 'explore', 'manage', 'liquidity-lock', 'airdrop'];
       if (!validRoutes.includes(currentStep)) {
-        return <NotFound />;
+        return (
+          <>
+            <NotFound />
+            <NetworkModeIndicator />
+          </>
+        );
       } else {
         return (
+          <>
           <LandingPage 
             onGetStarted={handleGetStarted}
             onLaunchSale={handleLaunchSale}
             onViewSales={handleViewSales}
             onViewTokens={handleViewTokens}
             onExploreSales={handleExploreSales}
+            onLiquidityLock={handleLiquidityLock}
+            onAirdrop={handleAirdrop}
           />
+          <NetworkModeIndicator />
+          </>
         );
       }
   }

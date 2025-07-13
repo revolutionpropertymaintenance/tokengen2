@@ -56,6 +56,96 @@ export const mainnets: Network[] = [
     explorerUrl: 'https://snowtrace.io',
     gasPrice: '0.025 AVAX (~$0.75)'
   }
+  {
+    id: 'cronos',
+    name: 'Cronos',
+    symbol: 'CRO',
+    chainId: 25,
+    rpcUrl: SELF_HOSTED_RPC[25],
+    explorerUrl: 'https://cronoscan.com',
+    gasPrice: '5000 CRO (~$0.50)'
+  },
+  {
+    id: 'core',
+    name: 'Core',
+    symbol: 'CORE',
+    chainId: 1116,
+    rpcUrl: SELF_HOSTED_RPC[1116],
+    explorerUrl: 'https://scan.coredao.org',
+    gasPrice: '0.01 CORE (~$0.10)'
+  },
+  {
+    id: 'dogechain',
+    name: 'DogeChain',
+    symbol: 'DOGE',
+    chainId: 2000,
+    rpcUrl: SELF_HOSTED_RPC[2000],
+    explorerUrl: 'https://explorer.dogechain.dog',
+    gasPrice: '0.1 DOGE (~$0.01)'
+  },
+  {
+    id: 'pulsechain',
+    name: 'PulseChain',
+    symbol: 'PLS',
+    chainId: 369,
+    rpcUrl: SELF_HOSTED_RPC[369],
+    explorerUrl: 'https://scan.pulsechain.com',
+    gasPrice: '0.001 PLS (~$0.01)'
+  },
+  {
+    id: 'zetachain',
+    name: 'ZetaChain',
+    symbol: 'ZETA',
+    chainId: 7000,
+    rpcUrl: SELF_HOSTED_RPC[7000],
+    explorerUrl: 'https://explorer.zetachain.com',
+    gasPrice: '0.01 ZETA (~$0.05)'
+  },
+  {
+    id: 'unichain',
+    name: 'Unichain',
+    symbol: 'UNI',
+    chainId: 130,
+    rpcUrl: SELF_HOSTED_RPC[130],
+    explorerUrl: 'https://uniscan.xyz',
+    gasPrice: '0.01 UNI (~$0.05)'
+  },
+  {
+    id: 'bitrock',
+    name: 'Bitrock',
+    symbol: 'BROCK',
+    chainId: 7171,
+    rpcUrl: SELF_HOSTED_RPC[7171],
+    explorerUrl: 'https://scan.bit-rock.io',
+    gasPrice: '0.01 BROCK (~$0.05)'
+  },
+  {
+    id: 'alveychain',
+    name: 'AlveyChain',
+    symbol: 'ALV',
+    chainId: 3797,
+    rpcUrl: SELF_HOSTED_RPC[3797],
+    explorerUrl: 'https://alveyscan.com',
+    gasPrice: '0.01 ALV (~$0.05)'
+  },
+  {
+    id: 'opengpu',
+    name: 'OpenGPU',
+    symbol: 'GPU',
+    chainId: 1071,
+    rpcUrl: SELF_HOSTED_RPC[1071],
+    explorerUrl: 'https://explorer.opengpu.io',
+    gasPrice: '0.01 GPU (~$0.05)'
+  },
+  {
+    id: 'base',
+    name: 'Base',
+    symbol: 'ETH',
+    chainId: 8453,
+    rpcUrl: SELF_HOSTED_RPC[8453],
+    explorerUrl: 'https://basescan.org',
+    gasPrice: '0.0001 ETH (~$0.25)'
+  }
 ];
 
 export const testnets: Network[] = [
@@ -103,6 +193,42 @@ export const testnets: Network[] = [
     rpcUrl: SELF_HOSTED_RPC[421614],
     explorerUrl: 'https://sepolia.arbiscan.io',
     gasPrice: '0.0001 ETH (~$0.00)'
+  }
+  {
+    id: 'fantom-testnet',
+    name: 'Fantom Testnet',
+    symbol: 'FTM',
+    chainId: 4002,
+    rpcUrl: SELF_HOSTED_RPC[4002],
+    explorerUrl: 'https://testnet.ftmscan.com',
+    gasPrice: '0.001 FTM (~$0.00)'
+  },
+  {
+    id: 'avalanche-fuji',
+    name: 'Avalanche Fuji',
+    symbol: 'AVAX',
+    chainId: 43113,
+    rpcUrl: SELF_HOSTED_RPC[43113],
+    explorerUrl: 'https://testnet.snowtrace.io',
+    gasPrice: '0.001 AVAX (~$0.00)'
+  },
+  {
+    id: 'cronos-testnet',
+    name: 'Cronos Testnet',
+    symbol: 'CRO',
+    chainId: 338,
+    rpcUrl: SELF_HOSTED_RPC[338],
+    explorerUrl: 'https://testnet.cronoscan.com',
+    gasPrice: '0.001 CRO (~$0.00)'
+  },
+  {
+    id: 'bitrock-testnet',
+    name: 'Bitrock Testnet',
+    symbol: 'BROCK',
+    chainId: 7771,
+    rpcUrl: SELF_HOSTED_RPC[7771],
+    explorerUrl: 'https://testnet-scan.bit-rock.io',
+    gasPrice: '0.001 BROCK (~$0.00)'
   }
 ];
 

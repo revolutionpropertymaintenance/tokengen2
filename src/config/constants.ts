@@ -42,13 +42,27 @@ export const SELF_HOSTED_RPC = {
   42161: import.meta.env.VITE_ARBITRUM_RPC_URL || 'https://arb1.arbitrum.io/rpc',
   250: import.meta.env.VITE_FANTOM_RPC_URL || 'https://rpc.ftm.tools/',
   43114: import.meta.env.VITE_AVALANCHE_RPC_URL || 'https://api.avax.network/ext/bc/C/rpc',
+  25: import.meta.env.VITE_CRONOS_RPC_URL || 'https://evm-cronos.crypto.org',
+  1116: import.meta.env.VITE_CORE_RPC_URL || 'https://rpc.coredao.org',
+  2000: import.meta.env.VITE_DOGECHAIN_RPC_URL || 'https://rpc.dogechain.dog',
+  369: import.meta.env.VITE_PULSECHAIN_RPC_URL || 'https://rpc.pulsechain.com',
+  7000: import.meta.env.VITE_ZETACHAIN_RPC_URL || 'https://zetachain-evm.blockpi.network/v1/rpc/public',
+  130: import.meta.env.VITE_UNICHAIN_RPC_URL || 'https://mainnet.unichain.org',
+  7171: import.meta.env.VITE_BITROCK_RPC_URL || 'https://connect.bit-rock.io',
+  3797: import.meta.env.VITE_ALVEYCHAIN_RPC_URL || 'https://elves-core1.alvey.io',
+  1071: import.meta.env.VITE_OPENGPU_RPC_URL || 'https://mainnet.opengpu.io/rpc',
+  8453: import.meta.env.VITE_BASE_RPC_URL || 'https://base-rpc.publicnode.com',
   
   // Testnets
   25062019: import.meta.env.VITE_ESTAR_TESTNET_RPC_URL || 'https://testnet-rpc.estar.games/',
   5: import.meta.env.VITE_GOERLI_RPC_URL || 'https://eth-goerli.g.alchemy.com/v2/demo',
   97: import.meta.env.VITE_BSC_TESTNET_RPC_URL || 'https://data-seed-prebsc-1-s1.binance.org:8545/',
   80001: import.meta.env.VITE_MUMBAI_RPC_URL || 'https://rpc-mumbai.maticvigil.com/',
-  421614: import.meta.env.VITE_ARBITRUM_SEPOLIA_RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc'
+  421614: import.meta.env.VITE_ARBITRUM_SEPOLIA_RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc',
+  4002: import.meta.env.VITE_FANTOM_TESTNET_RPC_URL || 'https://rpc.testnet.fantom.network',
+  43113: import.meta.env.VITE_AVALANCHE_FUJI_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc',
+  338: import.meta.env.VITE_CRONOS_TESTNET_RPC_URL || 'https://evm-t3.cronos.org',
+  7771: import.meta.env.VITE_BITROCK_TESTNET_RPC_URL || 'https://testnet.bit-rock.io'
 };
 
 // Network helpers
