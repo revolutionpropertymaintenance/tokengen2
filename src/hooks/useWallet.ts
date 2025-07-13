@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
-import { useNetworkMode } from './useNetworkMode';
 import { 
   CHAIN_CONFIG, 
   getMainnetChainIds, 
@@ -18,7 +17,6 @@ interface WalletState {
 }
 
 export const useWallet = () => {
-  const { isTestnetMode } = useNetworkMode();
   const [wallet, setWallet] = useState<WalletState>({
     isConnected: false,
     address: null,
@@ -27,23 +25,10 @@ export const useWallet = () => {
     error: null
   });
 
-  const [isNetworkMismatch, setIsNetworkMismatch] = useState(false);
   const [isAttemptingSwitch, setIsAttemptingSwitch] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Check if the current chain is compatible with the current mode
-  useEffect(() => {
-    if (wallet.isConnected && wallet.chainId) {
-      const isCorrectNetworkType = isTestnetMode 
-        ? isTestnetChain(wallet.chainId) 
-        : isMainnetChain(wallet.chainId);
-      
-      setIsNetworkMismatch(!isCorrectNetworkType);
-    } else {
-      setIsNetworkMismatch(false);
-    }
-  }, [wallet.isConnected, wallet.chainId, isTestnetMode]);
 
   const connectWallet = async () => {
     if (typeof window.ethereum === 'undefined') {
@@ -123,7 +108,6 @@ export const useWallet = () => {
         params: [{ chainId: `0x${chainId.toString(16)}` }],
       });
       
-      setIsNetworkMismatch(false);
       return true;
     } catch (switchError: any) {
       // This error code indicates that the chain has not been added to MetaMask
@@ -153,7 +137,6 @@ export const useWallet = () => {
             params: [{ chainId: `0x${chainId.toString(16)}` }],
           });
           
-          setIsNetworkMismatch(false);
           return true;
         } catch (addError: any) {
           console.error('Error adding chain to MetaMask:', addError);
@@ -174,14 +157,6 @@ export const useWallet = () => {
     }
   };
 
-  // Switch to a compatible network based on current mode
-  const switchToCompatibleNetwork = async () => {
-    const targetChainIds = isTestnetMode ? getTestnetChainIds() : getMainnetChainIds();
-    if (targetChainIds.length > 0) {
-      return await switchToNetwork(targetChainIds[0]);
-    }
-    return false;
-  };
 
   const disconnectWallet = () => {
     // Clear auth token
@@ -288,10 +263,8 @@ export const useWallet = () => {
     ...wallet,
     connectWallet,
     switchToNetwork,
-    switchToCompatibleNetwork,
     disconnectWallet,
     isConnecting,
-    isNetworkMismatch,
     isAttemptingSwitch,
     switchError
   };

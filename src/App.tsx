@@ -16,7 +16,14 @@ import { NotFound } from './components/NotFound';
 import { TokenConfig, DeploymentResult, Step } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useNetworkMode } from './hooks/useNetworkMode';
+import { useWallet } from './hooks/useWallet';
 import { NetworkModeIndicator } from './components/NetworkModeIndicator';
+import { 
+  getMainnetChainIds, 
+  getTestnetChainIds, 
+  isMainnetChain, 
+  isTestnetChain 
+} from './config/chainConfig';
 
 declare global {
   interface Window {
@@ -26,9 +33,29 @@ declare global {
 
 function App() {
   const { isTestnetMode } = useNetworkMode();
+  const { isConnected, chainId, switchToNetwork } = useWallet();
   const [currentStep, setCurrentStep] = useState<'landing' | 'builder' | 'vesting' | 'review' | 'success' | 'presale' | 'sales' | 'tokens' | 'sale' | 'explore' | 'manage' | 'liquidity-lock' | 'airdrop'>('landing');
   const [tokenConfig, setTokenConfig] = useState<TokenConfig | null>(null);
   const [deploymentResult, setDeploymentResult] = useState<DeploymentResult | null>(null);
+
+  // Handle network switching when mode changes or wallet connects
+  useEffect(() => {
+    if (isConnected && chainId) {
+      const isCorrectNetworkType = isTestnetMode 
+        ? isTestnetChain(chainId) 
+        : isMainnetChain(chainId);
+      
+      // If network doesn't match mode, try to switch
+      if (!isCorrectNetworkType) {
+        const targetChainIds = isTestnetMode ? getTestnetChainIds() : getMainnetChainIds();
+        if (targetChainIds.length > 0) {
+          switchToNetwork(targetChainIds[0]).catch(error => {
+            console.error('Failed to switch network:', error);
+          });
+        }
+      }
+    }
+  }, [isConnected, chainId, isTestnetMode, switchToNetwork]);
 
   const handleGetStarted = () => {
     setCurrentStep('builder');

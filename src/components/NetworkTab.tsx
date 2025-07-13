@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Network as NetworkIcon, Zap, Globe, Shield, Clock } from 'lucide-react';
 import { Network } from '../types';
 import { mainnets, testnets } from '../data/networks';
@@ -9,15 +9,11 @@ import { useNetworkMode } from '../hooks/useNetworkMode';
 interface NetworkTabProps {
   selectedNetwork: Network;
   onNetworkSelect: (network: Network) => void;
-  isTestnetMode: boolean;
-  onModeChange: (isTestnet: boolean) => void;
 }
 
 export const NetworkTab: React.FC<NetworkTabProps> = ({
   selectedNetwork,
   onNetworkSelect,
-  isTestnetMode: propIsTestnetMode,
-  onModeChange
 }) => {
   // Use the global network mode
   const { isTestnetMode } = useNetworkMode();
@@ -28,18 +24,16 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
   // Update activeTab when global network mode changes
   useEffect(() => {
     setActiveTab(isTestnetMode ? 'testnet' : 'mainnet');
-    onModeChange(isTestnetMode);
     
     // Auto-select first network of the new tab
     const networks = isTestnetMode ? testnets : mainnets;
     if (networks.length > 0) {
       onNetworkSelect(networks[0]);
     }
-  }, [isTestnetMode, onModeChange, onNetworkSelect]);
+  }, [isTestnetMode, onNetworkSelect]);
 
   const handleTabChange = (tab: 'mainnet' | 'testnet') => {
     setActiveTab(tab);
-    onModeChange(tab === 'testnet');
     
     // Auto-select first network of the new tab
     const networks = tab === 'testnet' ? testnets : mainnets;
