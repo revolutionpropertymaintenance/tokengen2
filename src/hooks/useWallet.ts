@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
 import { 
   CHAIN_CONFIG, 
   getMainnetChainIds, 
@@ -7,6 +6,7 @@ import {
   isMainnetChain, 
   isTestnetChain 
 } from '../config/chainConfig';
+import { web3Service } from '../services/web3Service';
 
 interface WalletState {
   isConnected: boolean;
@@ -31,51 +31,20 @@ export const useWallet = () => {
 
 
   const connectWallet = async () => {
-    if (typeof window.ethereum === 'undefined') {
-      setWallet(prev => ({
-        ...prev, 
-        isConnected: false,
-        address: null,
-        balance: null,
-        chainId: null,
-        error: 'No wallet detected. Please install MetaMask or another Web3 wallet.'
-      }));
-      setIsConnecting(false);
-      return null;
-    }
-    
     try {
       setIsConnecting(true);
       setWallet(prev => ({...prev, error: null}));
       
-      // Request account access
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send('eth_requestAccounts', []);
-      const signer = await provider.getSigner();
-      const address = await signer.getAddress();
-      
-      // Get network info
-      const network = await provider.getNetwork();
-      
-      // Get balance
-      const balance = await provider.getBalance(address);
-      const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
-
-      // Get chain ID
-      const chainId = Number(network.chainId);
+      // Use web3Service to connect
+      const address = await web3Service.connect();
+      if (!address) {
+        throw new Error('Failed to connect wallet');
+      }
       
       // Store wallet info in localStorage for persistence
       localStorage.setItem('walletAddress', address);
       
-      setWallet({
-        isConnected: true,
-        address: address,
-        balance: formattedBalance,
-        chainId: chainId,
-        error: null
-      });
-
-      console.log(`Wallet connected: ${address} on chain ${chainId}`);
+      console.log(`Wallet connected: ${address}`);
       return address;
     } catch (error) {
       const errorMessage = (error as Error).message || 'Failed to connect wallet';
@@ -94,64 +63,29 @@ export const useWallet = () => {
   };
 
   const switchToNetwork = async (chainId: number) => {
-    if (typeof window.ethereum === 'undefined') {
-      throw new Error('MetaMask is not installed');
-    }
-
     setIsAttemptingSwitch(true);
     setSwitchError(null);
 
     try {
-      // Try to switch to the network
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: `0x${chainId.toString(16)}` }],
-      });
-      
-      return true;
-    } catch (switchError: any) {
-      // This error code indicates that the chain has not been added to MetaMask
-      if (switchError.code === 4902) {
-        try {
-          const chainConfig = CHAIN_CONFIG[chainId];
-          if (!chainConfig) {
-            throw new Error(`Chain configuration not found for chain ID ${chainId}`);
-          }
-
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: chainConfig.chainId,
-                chainName: chainConfig.chainName,
-                nativeCurrency: chainConfig.nativeCurrency,
-                rpcUrls: chainConfig.rpcUrls,
-                blockExplorerUrls: chainConfig.blockExplorerUrls,
-              },
-            ],
-          });
-          
-          // Try switching again after adding
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: `0x${chainId.toString(16)}` }],
-          });
-          
-          return true;
-        } catch (addError: any) {
-          console.error('Error adding chain to MetaMask:', addError);
-          if (addError.code === 4001) {
-            setSwitchError('Network addition rejected: Please approve the request in MetaMask to add the network.');
-          } else {
-            setSwitchError(`Failed to add network: ${addError.message}`);
-          }
-          return false;
-        }
-      } else {
-        console.error('Error switching chain:', switchError);
-        setSwitchError(`Failed to switch network: ${switchError.message}`);
-        return false;
+      const chainConfig = CHAIN_CONFIG[chainId];
+      if (!chainConfig) {
+        throw new Error(`Chain configuration not found for chain ID ${chainId}`);
       }
+      
+      const network = {
+        chainId: chainId,
+        name: chainConfig.chainName,
+        rpcUrl: chainConfig.rpcUrls[0],
+        blockExplorerUrl: chainConfig.blockExplorerUrls?.[0] || '',
+        nativeCurrency: chainConfig.nativeCurrency
+      };
+      
+      await web3Service.switchNetwork(network);
+      return true;
+    } catch (error: any) {
+      console.error('Error switching chain:', error);
+      setSwitchError(`Failed to switch network: ${error.message}`);
+      return false;
     } finally {
       setIsAttemptingSwitch(false);
     }
@@ -163,6 +97,9 @@ export const useWallet = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('walletAddress');
     
+    // Disconnect from web3Service
+    web3Service.disconnect();
+    
     setWallet(prev => ({
       isConnected: false,
       address: null,
@@ -172,6 +109,44 @@ export const useWallet = () => {
     }));
   };
 
+  // Sync wallet state with web3Service
+  const syncWalletState = async () => {
+    try {
+      const provider = web3Service.getProvider();
+      const signer = web3Service.getSigner();
+      
+      if (!provider || !signer) {
+        if (wallet.isConnected) {
+          setWallet(prev => ({
+            ...prev,
+            isConnected: false,
+            address: null,
+            balance: null,
+            chainId: null
+          }));
+        }
+        return;
+      }
+      
+      const address = await signer.getAddress();
+      const network = await provider.getNetwork();
+      const balance = await provider.getBalance(address);
+      const formattedBalance = parseFloat(web3Service.formatEther(balance)).toFixed(4);
+      const chainId = Number(network.chainId);
+      
+      setWallet(prev => ({
+        ...prev,
+        isConnected: true,
+        address: address,
+        balance: formattedBalance,
+        chainId: chainId,
+        error: null
+      }));
+    } catch (error) {
+      console.error('Error syncing wallet state:', error);
+    }
+  };
+
   useEffect(() => {
     if (typeof window.ethereum !== 'undefined') {
       // Check if we have a stored wallet address and try to reconnect
@@ -179,7 +154,7 @@ export const useWallet = () => {
         const storedAddress = localStorage.getItem('walletAddress');
         if (storedAddress && !wallet.isConnected && !isConnecting) {
           try {
-            await connectWallet();
+            await web3Service.connect();
           } catch (err) {
             console.error('Auto-reconnect failed:', err);
             // Clear stored address if reconnect fails
@@ -189,6 +164,9 @@ export const useWallet = () => {
       }
       
       attemptReconnect();
+      
+      // Initial sync
+      syncWalletState();
       
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
@@ -206,14 +184,9 @@ export const useWallet = () => {
       const handleChainChanged = (chainId: string) => {
         const numericChainId = parseInt(chainId, 16);
         console.log(`Chain changed to: ${numericChainId}`);
-        setWallet(prev => ({
-          ...prev,
-          ...prev,
-          chainId: numericChainId
-        }));
         
-        // Refresh page on chain change to ensure all data is updated
-        window.location.reload();
+        // Sync state after chain change
+        setTimeout(syncWalletState, 100);
       };
       
       const handleDisconnect = (error: { code: number; message: string }) => {
@@ -233,28 +206,13 @@ export const useWallet = () => {
     }
   }, [wallet.isConnected, isConnecting]);
   
-  // Update balance periodically when connected
+  // Periodic sync when connected
   useEffect(() => {
     if (!wallet.isConnected || !wallet.address) return;
     
-    const updateBalance = async () => {
-      try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const balance = await provider.getBalance(wallet.address);
-        const formattedBalance = parseFloat(ethers.formatEther(balance)).toFixed(4);
-        
-        setWallet(prev => ({
-          ...prev,
-          balance: formattedBalance
-        }));
-      } catch (error) {
-        console.error('Error updating balance:', error);
-      }
-    };
-    
-    // Update immediately and then every 30 seconds
-    updateBalance();
-    const interval = setInterval(updateBalance, 30000);
+    // Sync immediately and then every 30 seconds
+    syncWalletState();
+    const interval = setInterval(syncWalletState, 30000);
     
     return () => clearInterval(interval);
   }, [wallet.isConnected, wallet.address]);
