@@ -2,6 +2,22 @@
 
 TokenForge is a comprehensive platform for creating and deploying professional-grade ERC-20/BEP-20 tokens across multiple blockchains using Hardhat. With an intuitive interface, secure backend deployment, and advanced features, TokenForge makes token creation accessible to everyone while maintaining enterprise-grade security and reliability.
 
+## 🚀 New Multi-Chain Support
+
+TokenForge now supports **25+ EVM-compatible blockchains** including:
+
+- **16 Mainnets**: Ethereum, BSC, Polygon, Arbitrum, Fantom, Avalanche, Cronos, Core, DogeChain, PulseChain, ZetaChain, Unichain, Bitrock, AlveyChain, OpenGPU, and Base
+- **8 Testnets**: Goerli, BSC Testnet, Mumbai, Arbitrum Sepolia, Fantom Testnet, Avalanche Fuji, Cronos Testnet, and Bitrock Testnet
+
+### Multi-Chain Features
+
+- **Complete Chain Metadata**: Chain IDs, network names, symbols, and icons
+- **MetaMask Integration**: Auto-add networks and switch chains seamlessly
+- **Network Mode Toggle**: Switch between mainnet and testnet modes with real-time feedback
+- **Chain Detection**: Automatically detect and adapt to the connected chain
+- **Network Selector**: Intuitive dropdown for selecting deployment networks
+- **Visual Indicators**: Clear feedback on current network and mode status
+
 ## 🚀 New Hardhat Integration
 
 TokenForge now uses **Hardhat** for all contract deployments, providing:
@@ -9,6 +25,7 @@ TokenForge now uses **Hardhat** for all contract deployments, providing:
 - **Automatic Verification**: Contracts verified on blockchain explorers
 - **Multi-Network Support**: Seamless deployment across all supported networks
 - **Gas Optimization**: Optimized contracts with reduced deployment costs
+- **25+ Blockchain Support**: Deploy on any of 16 mainnets and 8 testnets
 - **Deployment Tracking**: Complete deployment history and status monitoring
 - **Backend Security**: Secure API-based deployment with authentication
 - **Real Blockchain Integration**: Live data fetching from actual contracts
@@ -28,6 +45,13 @@ Blockchain Networks
 The platform now operates with a secure backend service that handles all contract compilation and deployment using Hardhat, while the frontend provides the user interface and wallet integration.
 
 ## 🔗 Real Blockchain Integration Features
+
+### Multi-Chain Support
+- **25+ Blockchain Networks**: Support for all major EVM-compatible chains
+- **MetaMask Integration**: Seamless network switching and addition
+- **Network Mode Toggle**: Easy switching between mainnet and testnet modes
+- **Chain Detection**: Automatic detection of connected chain
+- **Network Visualization**: Clear visual indicators for network status
 
 ### ESR Token Integration
 - **Real Balance Checking**: Actual ESR token balance queries using ethers.js
@@ -684,6 +708,7 @@ The sale explorer page includes:
 
 ## Features
 
+- **Multi-Chain Support**: Deploy on 25+ EVM-compatible blockchains including Ethereum, BSC, Polygon, Arbitrum, Fantom, Avalanche, and many more
 - **Hardhat-Powered Deployment**: Professional-grade contract deployment using industry-standard tools
 - **Secure Backend Architecture**: API-based deployment with JWT authentication
 - **Automatic Contract Verification**: All contracts verified on blockchain explorers
@@ -691,7 +716,6 @@ The sale explorer page includes:
 - **ESR Token System**: Real ESR token balance checking and deduction for deployments
 - **Dynamic RPC Configuration**: Environment-based network configuration
 - **No-Code Token Creation**: Create tokens with advanced features without writing code
-- **Multi-Chain Support**: Deploy on Ethereum, BSC, Polygon, Arbitrum, Fantom, Avalanche, and more
 - **Real-time Deployment Tracking**: Monitor deployment status and transaction confirmations
 - **Live Statistics**: Real-time token and sale statistics from blockchain
 - **Auto-Refresh Data**: Periodic updates for live sales and token data
@@ -704,6 +728,11 @@ The sale explorer page includes:
 - **Presale & Private Sale**: Launch token sales with customizable parameters
 - **Deployment History**: Track all your deployed contracts and sales
 - **Token Management Dashboard**: Manage your tokens after deployment
+- **Liquidity Locking**: Lock LP tokens for a specified duration to build trust
+- **Auto-DEX Listing**: Automatically create trading pairs after successful presales
+- **Referral System**: Earn rewards by referring others to token sales
+- **Emergency Withdraw**: Withdraw funds from active sales with a small penalty
+- **Airdrop Tool**: Send tokens to multiple addresses in a single transaction
   - Feature-based UI that only shows enabled features
   - Mint new tokens (owner only)
   - Burn tokens from your wallet
@@ -802,6 +831,16 @@ REPORT_GAS=false
 
 ## New Updates
 
+We've made significant improvements to the TokenForge platform with comprehensive multi-chain support:
+
+### Multi-Chain Support
+
+- **25+ Blockchain Networks**: Full support for 16 mainnets and 8 testnets
+- **MetaMask Integration**: Seamless network switching and addition
+- **Network Mode Toggle**: Easy switching between mainnet and testnet modes
+- **Chain Detection**: Automatic detection of connected chain
+- **Network Visualization**: Clear visual indicators for network status
+
 We've made significant improvements to the TokenForge platform with six powerful new features:
 
 ### Liquidity Lock System
@@ -850,7 +889,8 @@ We've made significant improvements to the TokenForge platform to make it produc
 
 ### Infrastructure Improvements
 
-- **Docker Deployment**: Added Docker configuration for containerized deployment with docker-compose
+- **Multi-Chain Support**: Added support for 25+ EVM-compatible blockchains
+- **Docker Deployment**: Added Docker configuration for containerized deployment with docker-compose 
 - **Nginx Configuration**: Optimized web server with security headers and caching
 - **CI/CD Pipeline**: Set up automated build and deployment workflow
 
@@ -872,6 +912,7 @@ We've made significant improvements to the TokenForge platform to make it produc
 
 ### Feature Completion
 
+- **Multi-Chain Support**: Added support for 25+ EVM-compatible blockchains
 - **Liquidity Lock System**: Implemented secure LP token locking with time-based unlocking
 - **Trending Projects Carousel**: Added dynamic project showcase with real-time sorting
 - **Auto-DEX Listing**: Completed automatic pair creation and liquidity addition
@@ -924,6 +965,16 @@ Before going live, I would recommend:
 
 ## Recent Updates
 
+We've made significant improvements to the TokenForge platform with comprehensive multi-chain support:
+
+### Multi-Chain Support
+
+- **25+ Blockchain Networks**: Full support for 16 mainnets and 8 testnets
+- **MetaMask Integration**: Seamless network switching and addition
+- **Network Mode Toggle**: Easy switching between mainnet and testnet modes
+- **Chain Detection**: Automatic detection of connected chain
+- **Network Visualization**: Clear visual indicators for network status
+
 We've made significant improvements to the TokenForge platform with six powerful new features:
 
 ### Liquidity Lock System
@@ -970,7 +1021,7 @@ We've made significant improvements to the TokenForge platform with six powerful
 
 ### MetaMask Chain Integration
 
-- **Full Chain Support**: Added comprehensive support for 6 mainnets (Ethereum, BSC, Polygon, Arbitrum, Avalanche, ESR) and 6 testnets (Goerli, BSC Testnet, Mumbai, Avalanche Fuji, Fantom Testnet, ESR Testnet)
+- **Full Chain Support**: Added comprehensive support for 16 mainnets and 8 testnets
 - **Automatic Network Detection**: DApp now detects wallet's chain ID and prompts appropriate actions
 - **Network Addition**: Automatically adds networks to MetaMask using `wallet_addEthereumChain` when needed
 - **Chain Switching**: Seamlessly switches between networks using `wallet_switchEthereumChain`
@@ -1129,7 +1180,7 @@ User Input → Frontend Validation → API Authentication → Hardhat Compilatio
 
 ### Supported Networks
 
-All deployments are handled through Hardhat with the following networks configured:
+All deployments are handled through Hardhat with the following 25+ networks configured:
 
 #### Mainnets
 - Ethereum (ETH) - Chain ID: 1
@@ -1138,6 +1189,17 @@ All deployments are handled through Hardhat with the following networks configur
 - Arbitrum (ETH) - Chain ID: 42161
 - Fantom (FTM) - Chain ID: 250
 - Avalanche (AVAX) - Chain ID: 43114
+- Cronos (CRO) - Chain ID: 25
+- Core (CORE) - Chain ID: 1116
+- DogeChain (DOGE) - Chain ID: 2000
+- PulseChain (PLS) - Chain ID: 369
+- ZetaChain (ZETA) - Chain ID: 7000
+- Unichain (UNI) - Chain ID: 130
+- Bitrock (BROCK) - Chain ID: 7171
+- AlveyChain (ALV) - Chain ID: 3797
+- OpenGPU (GPU) - Chain ID: 1071
+- Base (ETH) - Chain ID: 8453
+- ESR (ESR) - Chain ID: 25062019
 
 #### Testnets
 - Estar Testnet (ESR) - Chain ID: 25062019
@@ -1145,6 +1207,10 @@ All deployments are handled through Hardhat with the following networks configur
 - BSC Testnet (tBNB) - Chain ID: 97
 - Polygon Mumbai (MATIC) - Chain ID: 80001
 - Arbitrum Sepolia (ETH) - Chain ID: 421614
+- Fantom Testnet (FTM) - Chain ID: 4002
+- Avalanche Fuji (AVAX) - Chain ID: 43113
+- Cronos Testnet (CRO) - Chain ID: 338
+- Bitrock Testnet (BROCK) - Chain ID: 7771
 
 ## ESR Token System
 
