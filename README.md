@@ -711,8 +711,20 @@ The sale explorer page includes:
   - Manage holder redistribution settings
   - Create and monitor vesting schedules
   - View contract verification status
+  - Feature-based UI that only shows enabled features
+  - Mint new tokens (owner only)
+  - Burn tokens from your wallet
+  - Adjust transfer fees and recipient addresses
+  - Manage holder redistribution settings
+  - Create and monitor vesting schedules
+  - View contract verification status
 - **Mobile Responsive**: Fully responsive design works on all devices
 - **Enterprise Security**: Secure wallet-based authentication and API protection
+- **Liquidity Lock**: Lock LP tokens for a specified duration to build trust
+- **Auto-DEX Listing**: Automatically create trading pairs after successful presales
+- **Referral System**: Earn rewards by referring others to token sales
+- **Emergency Withdraw**: Withdraw funds from active sales with a small penalty
+- **Airdrop Tool**: Send tokens to multiple addresses in a single transaction
 
 ## Installation
 
@@ -790,6 +802,50 @@ REPORT_GAS=false
 
 ## New Updates
 
+We've made significant improvements to the TokenForge platform with six powerful new features:
+
+### Liquidity Lock System
+
+- **Complete Liquidity Locker**: Secure contract for locking LP tokens with configurable durations
+- **Lock Management Dashboard**: View, extend, and withdraw locked liquidity
+- **Auto-Lock Integration**: Automatically lock LP tokens after presale with configurable parameters
+- **Time-Based Unlocking**: LP tokens can only be withdrawn after the lock period ends
+
+### Trending Projects Carousel
+
+- **Dynamic Project Showcase**: Highlight featured and trending token sales
+- **Real-Time Sorting**: Sort by volume, participation, or featured status
+- **Admin Controls**: Ability to manually flag projects as featured
+- **Responsive Design**: Works seamlessly on all devices with smooth animations
+
+### Auto-DEX Listing
+
+- **Automatic Pair Creation**: Create trading pairs on DEX after successful presales
+- **Configurable Parameters**: Set listing price and liquidity percentages
+- **LP Token Management**: Track LP token address and liquidity status
+- **Immediate Trading**: Tokens become tradable immediately after presale ends
+
+### Referral System
+
+- **Unique Referral Links**: Generate wallet-specific referral links
+- **Commission Tracking**: Earn 3% of all contributions from referred users
+- **Real-Time Statistics**: Monitor referrals, volume, and earned rewards
+- **One-Click Claiming**: Claim earned rewards directly to your wallet
+
+### Emergency Withdrawal
+
+- **Pre-End Withdrawal**: Withdraw contributions before a sale ends
+- **Penalty Mechanism**: 10% penalty applied to discourage early withdrawals
+- **Transparent Breakdown**: Clear display of penalty and refund amounts
+- **Immediate Refunds**: Funds returned to user's wallet immediately
+
+### Airdrop Multi-Sender
+
+- **Batch Token Distribution**: Send tokens to multiple addresses in one transaction
+- **CSV Upload Support**: Import recipient lists from CSV files
+- **Gas Optimization**: Significantly reduced gas costs compared to individual transfers
+- **Preview & Confirmation**: Review all recipients and amounts before sending
+
 We've made significant improvements to the TokenForge platform to make it production-ready:
 
 ### Infrastructure Improvements
@@ -816,6 +872,12 @@ We've made significant improvements to the TokenForge platform to make it produc
 
 ### Feature Completion
 
+- **Liquidity Lock System**: Implemented secure LP token locking with time-based unlocking
+- **Trending Projects Carousel**: Added dynamic project showcase with real-time sorting
+- **Auto-DEX Listing**: Completed automatic pair creation and liquidity addition
+- **Referral System**: Implemented referral tracking with commission payouts
+- **Emergency Withdrawal**: Added penalty-based early withdrawal functionality
+- **Airdrop Tool**: Created gas-optimized multi-sender for token distribution
 - **ESR Token Integration**: Completed real ESR token balance checking and deduction
 - **Blockchain Interaction**: Improved contract deployment with proper error handling
 - **Contract Verification**: Implemented automatic verification on blockchain explorers
@@ -862,7 +924,49 @@ Before going live, I would recommend:
 
 ## Recent Updates
 
-We've made significant improvements to the TokenForge platform to enhance its functionality and user experience:
+We've made significant improvements to the TokenForge platform with six powerful new features:
+
+### Liquidity Lock System
+
+- **Complete Liquidity Locker**: Secure contract for locking LP tokens with configurable durations
+- **Lock Management Dashboard**: View, extend, and withdraw locked liquidity
+- **Auto-Lock Integration**: Automatically lock LP tokens after presale with configurable parameters
+- **Time-Based Unlocking**: LP tokens can only be withdrawn after the lock period ends
+
+### Trending Projects Carousel
+
+- **Dynamic Project Showcase**: Highlight featured and trending token sales
+- **Real-Time Sorting**: Sort by volume, participation, or featured status
+- **Admin Controls**: Ability to manually flag projects as featured
+- **Responsive Design**: Works seamlessly on all devices with smooth animations
+
+### Auto-DEX Listing
+
+- **Automatic Pair Creation**: Create trading pairs on DEX after successful presales
+- **Configurable Parameters**: Set listing price and liquidity percentages
+- **LP Token Management**: Track LP token address and liquidity status
+- **Immediate Trading**: Tokens become tradable immediately after presale ends
+
+### Referral System
+
+- **Unique Referral Links**: Generate wallet-specific referral links
+- **Commission Tracking**: Earn 3% of all contributions from referred users
+- **Real-Time Statistics**: Monitor referrals, volume, and earned rewards
+- **One-Click Claiming**: Claim earned rewards directly to your wallet
+
+### Emergency Withdrawal
+
+- **Pre-End Withdrawal**: Withdraw contributions before a sale ends
+- **Penalty Mechanism**: 10% penalty applied to discourage early withdrawals
+- **Transparent Breakdown**: Clear display of penalty and refund amounts
+- **Immediate Refunds**: Funds returned to user's wallet immediately
+
+### Airdrop Multi-Sender
+
+- **Batch Token Distribution**: Send tokens to multiple addresses in one transaction
+- **CSV Upload Support**: Import recipient lists from CSV files
+- **Gas Optimization**: Significantly reduced gas costs compared to individual transfers
+- **Preview & Confirmation**: Review all recipients and amounts before sending
 
 ### MetaMask Chain Integration
 
