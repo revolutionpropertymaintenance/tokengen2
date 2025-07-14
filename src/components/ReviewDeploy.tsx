@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Zap, Clock, Shield, Globe } from 'lucide-react';
 import { TokenConfig, DeploymentResult } from '../types';
 import { RemixFallback } from './RemixFallback';

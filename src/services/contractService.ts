@@ -155,21 +155,32 @@ export class ContractService {
       const contractType = this.getContractType(config);
       const constructorParams = this.getConstructorParams(config);
       
-      // Get gas estimate from web3Service
-      const estimate = await web3Service.estimateTokenDeploymentGas(contractType, constructorParams);
+      // Get gas estimate from backend API
+      const response = await fetch(`${this.apiUrl}/api/deploy/estimate`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({
+          contractType,
+          constructorArgs: constructorParams,
+          network: config.network.id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get gas estimate from backend');
+      }
+
+      const estimate = await response.json();
       
       // Determine if factory should be used (cheaper for standard tokens)
       const useFactory = ['BasicToken', 'BurnableToken', 'MintableToken', 'BurnableMintableToken'].includes(contractType);
       
-      // If using factory, reduce gas cost by approximately 30%
-      const factoryDiscount = useFactory ? 0.7 : 1.0;
-      
       return {
-        gasEstimate: estimate.gasEstimate.toString(),
-        gasCost: (parseFloat(estimate.gasCost) * factoryDiscount).toFixed(6),
+        gasEstimate: estimate.gasEstimate || '0',
+        gasCost: estimate.gasCost || '0.0',
         gasCostUsd: estimate.gasCostUsd,
         timeEstimate: estimate.timeEstimate,
-        useFactory
+        useFactory: estimate.useFactory || useFactory
       };
     } catch (error) {
       console.error('Error estimating deployment cost:', error);
