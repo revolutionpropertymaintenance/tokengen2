@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Info, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Info, AlertCircle, Zap } from 'lucide-react';
 import { TokenConfig, Network } from '../types';
 import { networks, mainnets, testnets } from '../data/networks';
 import { NetworkMismatchModal } from './NetworkMismatchModal';
@@ -16,7 +16,7 @@ interface TokenBuilderProps {
 
 export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, initialConfig }) => {
   const { isTestnetMode } = useNetworkMode();
-  const { chainId, isNetworkMismatch, switchToNetwork, isAttemptingSwitch, switchError } = useWallet(); 
+  const { chainId, isNetworkMismatch, switchToNetwork, isAttemptingSwitch, switchError, isConnected } = useWallet(); 
   const { toggleMode } = useNetworkMode();
   
   const [config, setConfig] = useState<TokenConfig>({
@@ -181,7 +181,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
   // Update gas estimate when features change
   useEffect(() => {
     const updateGasEstimate = async () => {
-      if (!config.name || !config.symbol || !config.initialSupply) {
+      if (!config.name || !config.symbol || !config.initialSupply || !isConnected) {
         return; // Don't estimate until we have basic info
       }
       
@@ -195,7 +195,7 @@ export const TokenBuilder: React.FC<TokenBuilderProps> = ({ onBack, onNext, init
     };
     
     updateGasEstimate();
-  }, [config.features, config.network, config.initialSupply, config.name, config.symbol]);
+  }, [config.features, config.network, config.initialSupply, config.name, config.symbol, isConnected]);
 
   const updateFeatures = (updates: Partial<TokenConfig['features']>) => {
     setConfig(prev => ({
