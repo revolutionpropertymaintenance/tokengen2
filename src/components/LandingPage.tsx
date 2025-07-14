@@ -73,7 +73,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Zap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">TokenForge</h1>
+              <h1 className="text-2xl font-bold text-white">ESTAR ECOSYSTEM</h1>
             </div>
           </div>
           <div className="flex items-center space-x-4">
