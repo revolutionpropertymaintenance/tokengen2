@@ -7,6 +7,7 @@ import { contractService } from '../services/contractService';
 import { vestingCategories } from '../data/vestingCategories';
 import { web3Service } from '../services/web3Service';
 import { useNetworkMode } from '../hooks/useNetworkMode';
+import { useWallet } from '../hooks/useWallet';
 
 interface ReviewDeployProps {
   config: TokenConfig;
