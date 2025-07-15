@@ -8,6 +8,7 @@ require('dotenv').config();
 const deployRoutes = require('./api/deploy');
 const authRoutes = require('./api/auth');
 const contractRoutes = require('./api/contracts');
+const tokenMetadataRoutes = require('./api/token-metadata');
 const connectDB = require('./db');
 const applySecurityMiddleware = require('./middleware/security');
 
@@ -39,6 +40,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/deploy', deployRoutes);
 app.use('/api/contracts', contractRoutes);
+app.use('/api/token-metadata', tokenMetadataRoutes);
 
 // Serve deployment files
 app.use('/deployments', express.static(path.join(__dirname, '..', 'deployments')));
