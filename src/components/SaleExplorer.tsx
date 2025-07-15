@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import { contractService } from '../services/contractService';
 
+// Add token metadata service import
+import { tokenMetadataService } from '../services/tokenMetadataService';
+
 interface PublicSale {
   id: string;
   contractAddress: string;
@@ -39,6 +42,9 @@ export const SaleExplorer: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'upcoming' | 'live' | 'ended'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'presale' | 'private'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'raised' | 'participants'>('date');
+
+  // State for token metadata
+  const [tokenMetadata, setTokenMetadata] = useState<Record<string, any>>({});
 
   useEffect(() => {
     // Load sales data from contractService
@@ -69,6 +75,10 @@ export const SaleExplorer: React.FC = () => {
         });
         
         setSales(mappedSales);
+        
+        // Fetch token metadata for each sale
+        fetchTokenMetadata(mappedSales);
+        
         setFilteredSales(mappedSales);
       } catch (error) {
         console.error('Error loading sales:', error);
@@ -77,6 +87,38 @@ export const SaleExplorer: React.FC = () => {
     
     loadSales();
   }, []);
+
+  const fetchTokenMetadata = async (sales: PublicSale[]) => {
+    try {
+      // Create a unique list of token addresses
+      const tokenAddresses = [...new Set(sales.map(sale => sale.contractAddress))];
+      
+      // Fetch metadata for each token
+      const metadataPromises = tokenAddresses.map(async (address) => {
+        try {
+          const metadata = await tokenMetadataService.getTokenMetadata(address);
+          return { address, metadata };
+        } catch (error) {
+          console.error(`Error fetching metadata for ${address}:`, error);
+          return { address, metadata: null };
+        }
+      });
+      
+      const metadataResults = await Promise.all(metadataPromises);
+      
+      // Create a map of token address to metadata
+      const metadataMap = metadataResults.reduce((map, { address, metadata }) => {
+        if (metadata) {
+          map[address] = metadata;
+        }
+        return map;
+      }, {} as Record<string, any>);
+      
+      setTokenMetadata(metadataMap);
+    } catch (error) {
+      console.error('Error fetching token metadata:', error);
+    }
+  };
 
   useEffect(() => {
     let filtered = sales.filter(sale => {
