@@ -6,12 +6,16 @@ import {
   Users, 
   DollarSign, 
   ArrowRight,
-  Loader2
+  Loader2,
+  Link,
+  Twitter,
+  MessageCircle
 } from 'lucide-react';
 import Slider from 'react-slick';
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { contractService } from '../services/contractService';
+import { tokenMetadataService } from '../services/tokenMetadataService';
 
 interface TrendingProject {
   id: string;
@@ -34,6 +38,7 @@ export const TrendingProjects: React.FC = () => {
   const [projects, setProjects] = useState<TrendingProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'featured' | 'trending' | 'upcoming'>('all');
+  const [tokenMetadata, setTokenMetadata] = useState<Record<string, any>>({});
 
   useEffect(() => {
     loadProjects();
@@ -88,10 +93,45 @@ export const TrendingProjects: React.FC = () => {
       );
       
       setProjects(mappedProjects);
+      
+      // Fetch token metadata for each project
+      fetchTokenMetadata(mappedProjects);
     } catch (error) {
       console.error('Error loading projects:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTokenMetadata = async (projects: TrendingProject[]) => {
+    try {
+      // Create a unique list of token addresses
+      const tokenAddresses = [...new Set(projects.map(project => project.contractAddress))];
+      
+      // Fetch metadata for each token
+      const metadataPromises = tokenAddresses.map(async (address) => {
+        try {
+          const metadata = await tokenMetadataService.getTokenMetadata(address);
+          return { address, metadata };
+        } catch (error) {
+          console.error(`Error fetching metadata for ${address}:`, error);
+          return { address, metadata: null };
+        }
+      });
+      
+      const metadataResults = await Promise.all(metadataPromises);
+      
+      // Create a map of token address to metadata
+      const metadataMap = metadataResults.reduce((map, { address, metadata }) => {
+        if (metadata) {
+          map[address] = metadata;
+        }
+        return map;
+      }, {} as Record<string, any>);
+      
+      setTokenMetadata(metadataMap);
+    } catch (error) {
+      console.error('Error fetching token metadata:', error);
     }
   };
 
@@ -242,18 +282,34 @@ export const TrendingProjects: React.FC = () => {
               {filteredProjects.map((project) => (
                 <div key={project.id} className="px-2">
                   <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 h-full">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className="text-xl font-semibold text-white">{project.name}</h3>
-                          {project.featured && (
-                            <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs flex items-center">
-                              <Star className="w-3 h-3 mr-1" />
-                              Featured
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        {tokenMetadata[project.contractAddress]?.logoUrl ? (
+                          <img 
+                            src={tokenMetadata[project.contractAddress].logoUrl} 
+                            alt={`${project.tokenName} logo`} 
+                            className="w-10 h-10 rounded-full object-cover border border-white/20"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                            <span className="text-white text-base font-bold">
+                              {project.tokenSymbol ? project.tokenSymbol.charAt(0) : '?'}
                             </span>
-                          )}
+                          </div>
+                        )}
+                        
+                        <div>
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h3 className="text-xl font-semibold text-white">{project.name}</h3>
+                            {project.featured && (
+                              <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs flex items-center">
+                                <Star className="w-3 h-3 mr-1" />
+                                Featured
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-300">{project.tokenName} ({project.tokenSymbol})</p>
                         </div>
-                        <p className="text-gray-300">{project.tokenName} ({project.tokenSymbol})</p>
                       </div>
                       
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
@@ -295,6 +351,25 @@ export const TrendingProjects: React.FC = () => {
                       </div>
                     </div>
                     
+                    {/* Token Tags */}
+                    {tokenMetadata[project.contractAddress]?.tags && tokenMetadata[project.contractAddress].tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {tokenMetadata[project.contractAddress].tags.slice(0, 2).map((tag: string) => (
+                          <span 
+                            key={tag} 
+                            className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {tokenMetadata[project.contractAddress].tags.length > 2 && (
+                          <span className="px-2 py-0.5 bg-gray-500/20 text-gray-300 rounded-full text-xs">
+                            +{tokenMetadata[project.contractAddress].tags.length - 2} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <div className="text-sm text-gray-300 mb-1">Network</div>
@@ -305,6 +380,47 @@ export const TrendingProjects: React.FC = () => {
                         <div className="text-white">{getTimeRemaining(project.endDate)}</div>
                       </div>
                     </div>
+                    
+                    {/* Social Links */}
+                    {tokenMetadata[project.contractAddress] && (
+                      <div className="flex space-x-3 mb-4">
+                        {tokenMetadata[project.contractAddress].websiteUrl && (
+                          <a 
+                            href={tokenMetadata[project.contractAddress].websiteUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-white/10 rounded-full text-blue-400 hover:bg-white/20 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Link className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        
+                        {tokenMetadata[project.contractAddress].twitterUrl && (
+                          <a 
+                            href={tokenMetadata[project.contractAddress].twitterUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-white/10 rounded-full text-blue-400 hover:bg-white/20 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Twitter className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        
+                        {tokenMetadata[project.contractAddress].telegramUrl && (
+                          <a 
+                            href={tokenMetadata[project.contractAddress].telegramUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-1.5 bg-white/10 rounded-full text-blue-400 hover:bg-white/20 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    )}
                     
                     <a
                       href={`/sale/${project.contractAddress}`}
