@@ -1431,5 +1431,88 @@ npm run start            # Start production server
    - Check browser console for error messages
 
 ## License
+New update 
+
+I've implemented a comprehensive dual-stage Token Metadata system for the platform. Here's what I've added:
+Database Structure
+
+    Created a new token_metadata table in Supabase with fields for storing token metadata including logo URL, description, social links, and tags
+    Added proper Row Level Security (RLS) policies to ensure only token owners can modify their token's metadata
+    Set up appropriate indexes for efficient queries
+
+Backend API
+
+    Implemented a new /api/token-metadata endpoint with the following functionality:
+        GET /:tokenAddress - Retrieve metadata for a specific token
+        POST /:tokenAddress - Create or update token metadata (owner only)
+        GET /:tokenAddress/opensea - OpenSea-compatible metadata endpoint
+
+Frontend Components
+
+    TokenMetadataForm - A comprehensive form for adding/editing token metadata:
+        Logo upload with preview
+        Description field (max 300 chars)
+        Social media links (Website, Twitter, Telegram, Discord, GitHub)
+        Whitepaper URL
+        Category tags with suggestions and custom input
+
+    TokenMetadataCard - A reusable component for displaying token metadata:
+        Displays logo, name, symbol, description
+        Shows category tags
+        Includes social media links
+        Has compact and full-size variants
+
+    TokenMetadataPreview - Shows how the token will appear in different contexts:
+        Launchpad view
+        Explorer view
+        DEX swap interface
+
+Integration Points
+
+    Token Creation Flow:
+        Added optional metadata entry during the token deployment process
+        Stores metadata temporarily and links it to the deployed contract address
+
+    Token Management:
+        Added a dedicated "Token Metadata" panel in the token management interface
+        Allows token owners to update metadata after deployment
+        Shows read-only view for non-owners
+
+    Display Locations:
+        Updated SaleExplorer to show token metadata in sale cards
+        Enhanced DeployedTokens to display logos and tags
+        Improved SalePage to show token description and social links
+        Added metadata to TrendingProjects carousel
+
+Technical Features
+
+    IPFS integration via Web3.Storage for logo uploads
+    Secure owner verification using both database and on-chain checks
+    OpenSea-compatible metadata format
+    Responsive design for all screen sizes
+
+This implementation provides a complete solution for token branding and metadata management, enhancing the user experience and making tokens more discoverable and professional-looking throughout the platform.
+Implement Token Metadata System
+
+supabase/migrations/20250715125656_pink_lab.sql
+server/api/token-metadata.js
+
+npm add multer@latest web3.storage@latest
+
+server/index.js
+src/components/TokenMetadataForm.tsx
+src/components/TokenMetadataCard.tsx
+src/components/tokenManagement/TokenMetadataPanel.tsx
+src/components/TokenMetadataPreview.tsx
+src/components/ReviewDeploy.tsx
+src/components/DeploymentSuccess.tsx
+src/components/TokenManagement.tsx
+src/components/SaleExplorer.tsx
+src/components/DeployedTokens.tsx
+src/services/tokenMetadataService.ts
+.env.example
+src/components/SalePage.tsx
+src/components/TrendingProjects.tsx
+
 
 MIT License
