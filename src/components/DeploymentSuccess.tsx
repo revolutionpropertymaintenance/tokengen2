@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, ExternalLink, Copy, Share2, Download, RefreshCw, ArrowLeft } from 'lucide-react';
 import { DeploymentResult } from '../types';
+import { TokenMetadataForm } from './TokenMetadataForm';
 
 interface DeploymentSuccessProps {
   result: DeploymentResult;
@@ -9,6 +10,26 @@ interface DeploymentSuccessProps {
 
 export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, onStartNew }) => {
   const [copied, setCopied] = React.useState<string | null>(null);
+  const [showMetadataForm, setShowMetadataForm] = React.useState(false);
+  const [pendingMetadata, setPendingMetadata] = React.useState<any>(null);
+
+  // Check for pending metadata on component mount
+  React.useEffect(() => {
+    const storedMetadata = localStorage.getItem('pendingTokenMetadata');
+    if (storedMetadata) {
+      try {
+        const metadata = JSON.parse(storedMetadata);
+        // Update the token address with the actual deployed address
+        metadata.tokenAddress = result.contractAddress;
+        setPendingMetadata(metadata);
+        setShowMetadataForm(true);
+        // Clear the pending metadata from localStorage
+        localStorage.removeItem('pendingTokenMetadata');
+      } catch (error) {
+        console.error('Error parsing pending metadata:', error);
+      }
+    }
+  }, [result.contractAddress]);
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -149,6 +170,25 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
           </div>
         </div>
 
+        {/* Token Metadata Form */}
+        {showMetadataForm && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-white/10 mb-8">
+            <h2 className="text-2xl font-semibold text-white mb-6">Complete Token Metadata</h2>
+            <p className="text-gray-300 mb-6">
+              Add metadata to your token to make it more discoverable and professional.
+              This information will be displayed in token explorers and DEXs.
+            </p>
+            
+            <TokenMetadataForm
+              tokenAddress={result.contractAddress}
+              tokenName={pendingMetadata?.name || ''}
+              tokenSymbol={pendingMetadata?.symbol || ''}
+              isOwner={true}
+              onMetadataUpdate={() => setShowMetadataForm(false)}
+            />
+          </div>
+        )}
+
         {/* Actions */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
@@ -188,13 +228,14 @@ export const DeploymentSuccess: React.FC<DeploymentSuccessProps> = ({ result, on
             <p className="text-gray-300 text-sm mb-4">
               Access token management features like minting, burning, and fee configuration
             </p>
-            <button
+            <a
+              href={`/manage/${result.contractAddress}`}
               onClick={() => window.location.href = `/manage/${result.contractAddress}`}
               className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 w-full justify-center"
             >
               <Settings className="w-4 h-4" />
               <span>Manage Token</span>
-            </button>
+            </a>
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
