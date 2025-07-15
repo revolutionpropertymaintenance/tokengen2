@@ -23,6 +23,7 @@ import { useWallet } from '../hooks/useWallet';
 import { useSaleContract } from '../hooks/useSaleContract';
 import { WalletConnection } from './WalletConnection';
 import { ReferralSystem } from './presale/ReferralSystem';
+import { tokenMetadataService } from '../services/tokenMetadataService';
 
 interface SalePageProps {
   contractAddress: string;
@@ -48,10 +49,29 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'buyers' | 'referral'>('overview');
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
+  const [tokenMetadata, setTokenMetadata] = useState<any>(null);
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false);
 
   useEffect(() => {
     loadSaleData();
+    
+    // Load token metadata when sale data is available
+    if (saleData?.tokenAddress) {
+      loadTokenMetadata(saleData.tokenAddress);
+    }
   }, [contractAddress, loadSaleData]);
+
+  const loadTokenMetadata = async (tokenAddress: string) => {
+    setIsLoadingMetadata(true);
+    try {
+      const metadata = await tokenMetadataService.getTokenMetadata(tokenAddress);
+      setTokenMetadata(metadata);
+    } catch (error) {
+      console.error('Error loading token metadata:', error);
+    } finally {
+      setIsLoadingMetadata(false);
+    }
+  };
 
   useEffect(() => {
     if (isConnected && address) {
@@ -229,7 +249,13 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => window.location.href = '/'}
+                {tokenMetadata?.logoUrl ? (
+                  <img 
+                    src={tokenMetadata.logoUrl} 
+                    alt={`${saleData.tokenName} logo`} 
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : sale.saleType === 'private' ? (
                 className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -245,8 +271,24 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                 )}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">{saleData.saleName}</h1>
+                <h1 className="text-2xl font-bold text-white">
+                  {tokenMetadata?.name || saleData.saleName}
+                </h1>
                 <p className="text-gray-300">{saleData.tokenName} ({saleData.tokenSymbol})</p>
+                
+                {/* Token Tags */}
+                {tokenMetadata?.tags && tokenMetadata.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {tokenMetadata.tags.slice(0, 3).map((tag: string) => (
+                      <span 
+                        key={tag} 
+                        className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <WalletConnection />
@@ -437,6 +479,15 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                 <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                   <h2 className="text-xl font-semibold text-white mb-4">Token Information</h2>
                   
+                  {/* Token Description */}
+                  {tokenMetadata?.description && (
+                    <div className="mb-4">
+                      <p className="text-gray-300 text-sm">
+                        {tokenMetadata.description}
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-300">Token Contract</span>
@@ -483,6 +534,59 @@ export const SalePage: React.FC<SalePageProps> = ({ contractAddress }) => {
                         </a>
                       </div>
                     </div>
+                    
+                    {/* Social Links */}
+                    {tokenMetadata && (
+                      <div className="flex flex-wrap gap-4 mt-4">
+                        {tokenMetadata.websiteUrl && (
+                          <a 
+                            href={tokenMetadata.websiteUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
+                          >
+                            <Link className="w-4 h-4" />
+                            <span>Website</span>
+                          </a>
+                        )}
+                        
+                        {tokenMetadata.twitterUrl && (
+                          <a 
+                            href={tokenMetadata.twitterUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
+                          >
+                            <Twitter className="w-4 h-4" />
+                            <span>Twitter</span>
+                          </a>
+                        )}
+                        
+                        {tokenMetadata.telegramUrl && (
+                          <a 
+                            href={tokenMetadata.telegramUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>Telegram</span>
+                          </a>
+                        )}
+                        
+                        {tokenMetadata.discordUrl && (
+                          <a 
+                            href={tokenMetadata.discordUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>Discord</span>
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   {copied && (
