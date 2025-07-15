@@ -27,6 +27,7 @@ import { FeeManagementPanel } from './tokenManagement/FeeManagementPanel';
 import { RedistributionPanel } from './tokenManagement/RedistributionPanel';
 import { VestingManagementPanel } from './tokenManagement/VestingManagementPanel';
 import { VerificationPanel } from './tokenManagement/VerificationPanel';
+import { TokenMetadataPanel } from './tokenManagement/TokenMetadataPanel';
 
 export const TokenManagement: React.FC = () => {
   const { tokenAddress } = useParams<{ tokenAddress: string }>();
@@ -67,7 +68,15 @@ export const TokenManagement: React.FC = () => {
   const getAvailableFeatures = () => {
     if (!tokenData) return [];
     
-    const features = [];
+    const features = [
+      {
+        id: 'metadata',
+        name: 'Token Metadata',
+        icon: Image,
+        description: 'Manage token logo, description, and links',
+        ownerOnly: false
+      }
+    ];
     
     if (tokenData.features.mintable) {
       features.push({
@@ -180,6 +189,13 @@ export const TokenManagement: React.FC = () => {
         return (
           <VerificationPanel
             tokenData={tokenData}
+          />
+        );
+      case 'metadata':
+        return (
+          <TokenMetadataPanel
+            tokenData={tokenData}
+            isOwner={isOwner}
           />
         );
       default:
