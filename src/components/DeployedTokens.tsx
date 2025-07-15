@@ -10,12 +10,18 @@ import {
   Eye,
   MoreVertical,
   Download,
-  ArrowLeft
+  ArrowLeft,
+  Link,
+  Twitter,
+  MessageCircle,
+  Settings
 } from 'lucide-react';
 import { Network } from '../types';
 import { networks } from '../data/networks';
 import { contractService } from '../services/contractService';
 import { web3Service } from '../services/web3Service';
+import { tokenMetadataService } from '../services/tokenMetadataService';
+import { TokenMetadataCard } from './TokenMetadataCard';
 
 interface DeployedToken {
   id: string;
@@ -40,6 +46,9 @@ export const DeployedTokens: React.FC = () => {
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'supply'>('date');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'verified'>('all');
   const [copied, setCopied] = useState<string | null>(null);
+
+  // State for token metadata
+  const [tokenMetadata, setTokenMetadata] = useState<Record<string, any>>({});
 
   // State for deployed tokens
   const [deployedTokens, setDeployedTokens] = useState<DeployedToken[]>([]);
@@ -73,6 +82,9 @@ export const DeployedTokens: React.FC = () => {
         
         setDeployedTokens(mappedTokens);
         
+        // Fetch token metadata for each token
+        fetchTokenMetadata(mappedTokens);
+        
         // Fetch real statistics for each token
         await fetchTokenStatistics(mappedTokens);
       } catch (error) {
@@ -82,6 +94,38 @@ export const DeployedTokens: React.FC = () => {
     
     loadDeployedTokens();
   }, []);
+
+  const fetchTokenMetadata = async (tokens: DeployedToken[]) => {
+    try {
+      // Create a unique list of token addresses
+      const tokenAddresses = [...new Set(tokens.map(token => token.contractAddress))];
+      
+      // Fetch metadata for each token
+      const metadataPromises = tokenAddresses.map(async (address) => {
+        try {
+          const metadata = await tokenMetadataService.getTokenMetadata(address);
+          return { address, metadata };
+        } catch (error) {
+          console.error(`Error fetching metadata for ${address}:`, error);
+          return { address, metadata: null };
+        }
+      });
+      
+      const metadataResults = await Promise.all(metadataPromises);
+      
+      // Create a map of token address to metadata
+      const metadataMap = metadataResults.reduce((map, { address, metadata }) => {
+        if (metadata) {
+          map[address] = metadata;
+        }
+        return map;
+      }, {} as Record<string, any>);
+      
+      setTokenMetadata(metadataMap);
+    } catch (error) {
+      console.error('Error fetching token metadata:', error);
+    }
+  };
 
   const fetchTokenStatistics = async (tokens: DeployedToken[]) => {
     try {
@@ -366,8 +410,26 @@ export const DeployedTokens: React.FC = () => {
             sortedTokens.map((token) => (
               <div key={token.id} className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4">
-                    <div className="text-3xl">{getNetworkIcon(token.network.id)}</div>
+                  <div className="flex items-start space-x-3">
+                    {tokenMetadata[token.contractAddress] ? (
+                      <div className="flex items-center space-x-3">
+                        {tokenMetadata[token.contractAddress].logoUrl ? (
+                          <img 
+                            src={tokenMetadata[token.contractAddress].logoUrl} 
+                            alt={`${token.name} logo`} 
+                            className="w-12 h-12 rounded-full object-cover border border-white/20"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                            <span className="text-white text-lg font-bold">
+                              {token.symbol.charAt(0)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-3xl">{getNetworkIcon(token.network.id)}</div>
+                    )}
                     
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
@@ -380,24 +442,43 @@ export const DeployedTokens: React.FC = () => {
                       
                       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                         <div>
-                          <div className="text-sm text-gray-300">Network</div>
-                          <div className="text-white font-medium">{token.network.name}</div>
-                        </div>
-                        <div>
                           <div className="text-sm text-gray-300">Total Supply</div>
                           <div className="text-white font-medium">{parseInt(token.totalSupply).toLocaleString()}</div>
                         </div>
                         <div>
-                          <div className="text-sm text-gray-300">Holders</div>
-                          <div className="text-white font-medium">{token.holders.toLocaleString()}</div>
+                          <div className="text-sm text-gray-300">Transfers</div>
+                          <span className="text-white font-medium">{token.transfers.toLocaleString()}</span>
                         </div>
                         <div>
-                          <div className="text-sm text-gray-300">Deployed</div>
+                          <div className="text-sm text-gray-300">Holders</div>
+                          <span className="text-white font-medium">{token.holders.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-300">Network</div>
                           <div className="text-white font-medium">
-                            {new Date(token.deploymentDate).toLocaleDateString()}
+                            {token.network.name}
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Token Tags */}
+                      {tokenMetadata[token.contractAddress]?.tags && tokenMetadata[token.contractAddress].tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-4">
+                          {tokenMetadata[token.contractAddress].tags.slice(0, 3).map((tag: string) => (
+                            <span 
+                              key={tag} 
+                              className="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded-full text-xs"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {tokenMetadata[token.contractAddress].tags.length > 3 && (
+                            <span className="px-2 py-0.5 bg-gray-500/20 text-gray-300 rounded-full text-xs">
+                              +{tokenMetadata[token.contractAddress].tags.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="flex items-center space-x-2 mb-4">
                         <span className="text-sm text-gray-300">Contract:</span>
@@ -425,6 +506,44 @@ export const DeployedTokens: React.FC = () => {
                           </span>
                         ))}
                       </div>
+                      
+                      {/* Social Links */}
+                      {tokenMetadata[token.contractAddress] && (
+                        <div className="flex space-x-3 mt-3">
+                          {tokenMetadata[token.contractAddress].websiteUrl && (
+                            <a 
+                              href={tokenMetadata[token.contractAddress].websiteUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white/10 rounded-full text-blue-400 hover:bg-white/20 transition-colors"
+                            >
+                              <Link className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                          
+                          {tokenMetadata[token.contractAddress].twitterUrl && (
+                            <a 
+                              href={tokenMetadata[token.contractAddress].twitterUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white/10 rounded-full text-blue-400 hover:bg-white/20 transition-colors"
+                            >
+                              <Twitter className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                          
+                          {tokenMetadata[token.contractAddress].telegramUrl && (
+                            <a 
+                              href={tokenMetadata[token.contractAddress].telegramUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="p-1.5 bg-white/10 rounded-full text-blue-400 hover:bg-white/20 transition-colors"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -437,13 +556,13 @@ export const DeployedTokens: React.FC = () => {
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
-                    <button
-                      onClick={() => window.location.href = `/manage/${token.contractAddress}`}
+                    <a
+                      href={`/manage/${token.contractAddress}`}
                       className="p-2 text-gray-400 hover:text-white transition-colors"
                       title="Manage Token"
                     >
                       <Settings className="w-4 h-4" />
-                    </button>
+                    </a>
                     <button className="p-2 text-gray-400 hover:text-white transition-colors">
                       <MoreVertical className="w-4 h-4" />
                     </button>
