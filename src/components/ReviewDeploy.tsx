@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, Zap, Clock, Shield, 
 import { TokenConfig, DeploymentResult } from '../types';
 import { RemixFallback } from './RemixFallback';
 import { NetworkMismatchModal } from './NetworkMismatchModal';
+import { TokenMetadataForm } from './TokenMetadataForm';
 import { contractService } from '../services/contractService'; 
 import { vestingCategories } from '../data/vestingCategories';
 import { web3Service } from '../services/web3Service';
@@ -24,6 +25,21 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
   const [deploymentFailed, setDeploymentFailed] = useState(false);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
   const [useFactory, setUseFactory] = useState(true);
+  const [showMetadataForm, setShowMetadataForm] = useState(false);
+  const [tokenMetadata, setTokenMetadata] = useState({
+    tokenAddress: '',
+    name: config.name,
+    symbol: config.symbol,
+    description: '',
+    logoUrl: '',
+    websiteUrl: '',
+    twitterUrl: '',
+    telegramUrl: '',
+    discordUrl: '',
+    githubUrl: '',
+    whitePaperUrl: '',
+    tags: []
+  });
   const [costEstimate, setCostEstimate] = useState({
     gasEstimate: '0',
     gasCost: '0.025',
@@ -96,6 +112,9 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
         }
       }
       
+      // Store metadata for later use after deployment
+      localStorage.setItem('pendingTokenMetadata', JSON.stringify(tokenMetadata));
+      
       // Deploy token using contractService
       const result = await contractService.deployToken({
         ...config,
@@ -103,6 +122,13 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
       });
       
       onDeploy(result);
+      
+      // Store the contract address with the metadata for later use
+      const updatedMetadata = {
+        ...tokenMetadata,
+        tokenAddress: result.contractAddress
+      };
+      localStorage.setItem('pendingTokenMetadata', JSON.stringify(updatedMetadata));
     } catch (error) {
       console.error('Deployment failed:', error);
       setDeploymentError((error as Error).message);
@@ -128,6 +154,10 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
     if (config.features.transferFees.enabled) features.push('Transfer Fees');
     if (config.features.holderRedistribution.enabled) features.push('Holder Redistribution');
     return features;
+  };
+
+  const handleMetadataChange = (metadata) => {
+    setTokenMetadata(metadata);
   };
 
   // Show Remix fallback if deployment failed
@@ -278,6 +308,34 @@ export const ReviewDeploy: React.FC<ReviewDeployProps> = ({ config, onBack, onDe
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Token Metadata */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Token Metadata (Optional)</h2>
+              <button
+                onClick={() => setShowMetadataForm(!showMetadataForm)}
+                className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors text-sm"
+              >
+                {showMetadataForm ? 'Hide Form' : 'Add Metadata'}
+              </button>
+            </div>
+            
+            {showMetadataForm ? (
+              <TokenMetadataForm
+                tokenAddress=""
+                tokenName={config.name}
+                tokenSymbol={config.symbol}
+                isOwner={true}
+                onMetadataUpdate={handleMetadataChange}
+              />
+            ) : (
+              <p className="text-gray-300">
+                You can add metadata like logo, description, and social links to your token now or after deployment.
+                This helps your token stand out in explorers and DEXs.
+              </p>
+            )}
           </div>
 
           {/* Sidebar */}
